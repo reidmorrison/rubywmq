@@ -152,12 +152,16 @@ END_OF_STRING
     str << "end\n"
   end
   
+  def self.generate(path)
+    File.open('wmq_const_admin.rb', 'w') {|file| file.write(GenerateConst.admin_consts(path))}
+    puts 'Generated wmq_const_admin.rb'
+    File.open('wmq_const.rb', 'w') {|file| file.write(GenerateConst.wmq_const(path))}
+    puts 'Generated wmq_const.rb'
+  end
 end  
 
-path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")
-path = path + '/'
-
-File.open('wmq_const_admin.rb', 'w') {|file| file.write(GenerateConst.admin_consts(path))}
-puts 'Generated wmq_const_admin.rb'
-File.open('wmq_const.rb', 'w') {|file| file.write(GenerateConst.wmq_const(path))}
-puts 'Generated wmq_const.rb'
+if $0 == __FILE__
+  path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")
+  path = path + '/'
+  GenerateConst.generate(path)
+end

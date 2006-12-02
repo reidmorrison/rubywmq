@@ -226,11 +226,15 @@ MQLONG wmq_command_lookup(ID command_id)
 END_OF_STRING
   str
   end
+  
+  def self.generate(path)
+    File.open('wmq_reason.c', 'w') {|file| file.write(GenerateReason.wmq_reason(path))}
+    puts 'Generated wmq_reason.c'
+  end
 end
 
-path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")
-path = path + '/'
-
-File.open('wmq_reason.c', 'w') {|file| file.write(GenerateReason.wmq_reason(path))}
-puts 'Generated wmq_reason.c'
-
+if $0 == __FILE__
+  path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")
+  path = path + '/'
+  GenerateReason.generate(path)
+end

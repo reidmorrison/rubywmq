@@ -39,41 +39,6 @@ void Message_id_init()
     ID_message         = rb_intern("message");
 }
 
-#if 0 /* Leave auto-grow buffer in Queue for now */
-
- typedef struct tagWMQ_MESSAGE WMQ_MESSAGE;
- typedef WMQ_MESSAGE MQPOINTER P_WMQ_MESSAGE;
-
- struct tagQUEUE {
-    MQLONG   trace_level;             /* Trace level.                  */
-    PMQBYTE  p_buffer;                /* message buffer                */
-    MQLONG   buffer_size;             /* Allocated size of buffer      */
- };
-
-/* --------------------------------------------------
- * C Structure to store MQ data types and other
- *   C internal values
- * --------------------------------------------------*/
-void WMQ_MESSAGE_free(void* p)
-{
-    P_WMQ_MESSAGE pm = (P_WMQ_MESSAGE)p;
-    if(pm->trace_level) printf("WMQ::Message Freeing WMQ_MESSAGE structure\n");
-
-    free(pm->p_buffer);
-    free(p);
-}
-
-VALUE WMQ_MESSAGE_alloc(VALUE klass)
-{
-    P_WMQ_MESSAGE pm = ALLOC(WMQ_MESSAGE);
-    pm->trace_level = 0;
-    pm->buffer_size = 16384;
-    pm->p_buffer = ALLOC_N(char, pm->buffer_size);
-
-    return Data_Wrap_Struct(klass, 0, QUEUE_free, pq);
-}
-#endif
-
 void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace_level,
                    VALUE parms, PPMQVOID pp_buffer, PMQLONG p_total_length, PMQMD pmqmd)
 {

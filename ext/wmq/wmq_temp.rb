@@ -47,49 +47,6 @@ module WMQ
     attr_reader :data, :descriptor, :headers
     attr_writer :data, :descriptor, :headers
     
-    # Warning: Do not use, this will go away
-    #
-    # Add a dead letter header
-    # 
-    # Moves the following fields from Options (MQMD) to the Dead Letter header:
-    # 'put_appl_type', 'put_appl_name', 'put_date', 'put_time',
-    # 'encoding', 'coded_char_set_id', 'format'
-    # 
-    # Sets format of MQMD to MQDEAD 
-    # 
-    def add_dead_letter_info(dlh)
-      [:put_appl_type, :put_appl_name, :put_date, :put_time,
-       :encoding, :coded_char_set_id, :format ].each do |item|
-        value = @descriptor.delete(item)
-        dlh[item] = value if value
-      end
-      
-      @descriptor[:format] = 'MQDEAD'
-      @headers[:dead_letter_header] = dlh
-      dlh
-    end
-    
-    # Warning: Do not use, this will go away
-    # 
-    # Extract DLH values that actually belong to DLH from MQMD
-    # Leaving MQMD with values that belong to the data
-    # Returns the DLH
-    def extract_dead_letter_info
-      dlh = @headers.delete(:dead_letter_header)
-      return nil unless dlh
-      
-      # Either Channel Receiver, or MQMon file export/import is messing up these fields    
-      #'encoding', 'coded_char_set_id',    
-      [:put_appl_type, :put_appl_name, :put_date, :put_time,
-      :format ].each do |item|
-        dl_value = @descriptor[item]
-        @descriptor[item] = dlh[item]
-        dlh[item] = dl_value
-      end
-      
-      dlh.delete(:format)
-      dlh
-    end
   end
   
 end

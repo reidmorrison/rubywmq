@@ -1,0 +1,71 @@
+== Description
+   rubywmq - Ruby WMQ is a Ruby interface into WebSphere MQ, previously called MQSeries
+
+== Synopsis
+   require 'wmq'
+
+   WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
+     qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
+   end
+
+== Building Ruby WMQ
+   Building Ruby WMQ on UNIX/Linux
+   -------------------------------
+   The following is required to build from source code
+   · A ‘C’ compiler
+   · The WebSphere MQ Software development toolkit
+
+   Extracting the source code package:
+   · unzip package.zip
+   · tar -xvf ‘package.tar
+
+   cd ext/wmq
+   Edit the file build.sh and edit the location of WebSphere (if not in /opt/mqm)
+
+   Run build.sh
+
+   For any questions, or to report build errors, submit a new Support Request:
+   http://rubywmq.rubyforge.org
+
+   Building Ruby WMQ on Windows
+   ----------------------------
+   The following is required to build from source code
+   · The Visual C++ 6.0 compiler
+   · The WebSphere MQ Software development toolkit
+
+   cd ext\wmq
+   Edit the file build.bat and edit the location of WebSphere MQ
+   (if not in C:\Program Files\IBM\WebSphere MQ)
+   and the location of Visual C++ 6 (if not C:\Program Files\Microsoft Visual Studio\VC98)
+
+   Run build.bat
+
+== Support
+   For any questions, or to report build errors, submit a new Support Request:
+   http://rubywmq.rubyforge.org
+
+== Future Plans
+   Add more formatting option contants and related methods.
+
+== License
+   Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+== Copyright
+   (C) 2006 J. Reid Morrison. Dimension Solutions, Inc.
+   All Rights Reserved
+
+== Author
+   Reid Morrison
+   rubywmq at gmail dot com

@@ -20,9 +20,9 @@
 #
 #          Calls MQPUT
 #
-require 'wmq/wmq_client'
+require 'wmq'
 
-WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
+WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
   qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:output) do |queue|
 
     # First message

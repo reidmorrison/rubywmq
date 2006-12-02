@@ -1,4 +1,5 @@
-$:.unshift "../ext"
+# Shift include path to use locally built copy of rubwmq
+$:.unshift '../ext'
 
 require 'wmq/wmq_client'
 require 'wmq/wmq_const_admin'

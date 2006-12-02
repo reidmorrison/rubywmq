@@ -348,12 +348,15 @@ END_OF_STRING
     str << wmq_deblock(structs)
     str << wmq_build(structs)
   end
+  
+  def self.generate(path)
+    File.open('wmq_structs.c', 'w') {|file| file.write(GenerateStructs.new.wmq_structs(path))}
+    puts 'Generated wmq_structs.c'
+  end
 end
 
-path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")
-path = path + '/'
-
-File.open('wmq_structs.c', 'w') {|file| file.write(GenerateStructs.new.wmq_structs(path))}
-puts 'Generated wmq_structs.c'
-
-#GenerateStructs.test_rubyize_name
+if $0 == __FILE__
+  path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")
+  path = path + '/'
+  GenerateStructs.generate(path)
+end

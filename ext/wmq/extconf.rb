@@ -15,7 +15,31 @@
 ################################################################################
 
 require 'mkmf'
-dir_config('mqm')
+require '../../generate/generate_reason'
+require '../../generate/generate_const'
+require '../../generate/generate_structs'
+
+include_path = ''
+if RUBY_PLATFORM =~ /mswin32/
+  # Since mkmf does not support lib paths that contain spaces:
+  system 'copy "C:\Program Files\IBM\WebSphere MQ\Tools\lib\mqm.lib"'
+
+  include_path = 'C:\Program Files\IBM\WebSphere MQ\Tools\c\include'
+  dir_config('mqm', include_path, '.')
+else
+  include_path = '/opt/mqm/inc'
+  dir_config('mqm', include_path, '/opt/mqm/lib')
+end
+
 have_header('cmqc.h')
+
+# Check for WebSphere MQ Server library
 have_library('mqm')
-create_makefile('wmq_server')
+
+# Generate Source Files
+GenerateReason.generate(include_path+'/')
+GenerateConst.generate(include_path+'/')
+GenerateStructs.generate(include_path+'/')
+
+# Generate Makefile
+create_makefile('wmq_server') #, 'wmq_client')
