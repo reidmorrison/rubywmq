@@ -31,6 +31,9 @@ WMQ::QueueManager.connect(
 
     message = WMQ::Message.new
     if queue.get(:message => message)
+      puts "Headers Received:"
+      message.headers.each {|header| p header}
+      
       puts "Data Received: #{message.data}"
     else
       puts 'No message available'

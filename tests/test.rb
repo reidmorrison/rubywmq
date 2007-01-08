@@ -225,4 +225,15 @@ class TestTest < Test::Unit::TestCase
           }
     verify_header(xqh, WMQ::MQFMT_XMIT_Q_HEADER)
   end
+  
+  def test_rf_header
+    puts '****** test_rf_header ******'
+    # Note: Does not yet support quotes or spaces in names or values
+    rfh = {:header_type     =>:rf_header,
+           :name_value => {' name   s' => '  v a l u e 1  ', 
+                           'n a m e 2 ' => 'v a l u e  2', 
+                           'name3'=>['value3', '', 'value 43']},
+          }
+    verify_header(rfh, WMQ::MQFMT_RF_HEADER)
+  end
 end

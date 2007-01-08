@@ -36,7 +36,7 @@ end
 # Generate Source Files # Could check if not already present
 GenerateReason.generate(include_path+'/')
 GenerateConst.generate(include_path+'/')
-GenerateStructs.generate(include_path+'/')
+GenerateStructs.new(include_path+'/', '../../generate').generate
 
 have_header('cmqc.h')
 create_makefile('wmq_client')

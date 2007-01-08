@@ -109,11 +109,14 @@ extern VALUE wmq_exception;
 void  Message_id_init();
 VALUE Message_initialize(int argc, VALUE *argv, VALUE self);
 VALUE Message_clear(VALUE self);
+PMQBYTE Message_autogrow_data_buffer(struct Message_build_header_arg* parg, MQLONG additional_size);
+void    Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg);
+MQLONG  Message_deblock_rf_header (VALUE hash, PMQBYTE p_data);
 
 void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace_level,
                    VALUE parms, PPMQVOID pp_buffer, PMQLONG p_total_length, PMQMD pmqmd);
 void Message_build_mqmd(VALUE self, PMQMD pmqmd);
-void Message_deblock(VALUE message, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_length);
+void Message_deblock(VALUE message, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_length, MQLONG trace_level);
 
 struct Message_build_header_arg {
     PMQBYTE* pp_buffer;                               /* Autosize: Pointer to start of total buffer */

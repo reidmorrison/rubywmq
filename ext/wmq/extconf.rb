@@ -39,7 +39,7 @@ have_library('mqm')
 # Generate Source Files
 GenerateReason.generate(include_path+'/')
 GenerateConst.generate(include_path+'/')
-GenerateStructs.generate(include_path+'/')
+GenerateStructs.new(include_path+'/', '../../generate').generate
 
 # Generate Makefile
 create_makefile('wmq_server') #, 'wmq_client')

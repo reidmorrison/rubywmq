@@ -1,0 +1,8 @@
+ext/wmq/wmq_const.rb
+ext/wmq/wmq.c
+ext/wmq/wmq_queue_manager.c
+ext/wmq/wmq_message.c
+ext/wmq/wmq_queue.c
+ext/wmq/message.rb
+ext/wmq/wmq_const_admin.rb
+README

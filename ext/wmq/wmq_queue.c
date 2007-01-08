@@ -786,7 +786,7 @@ VALUE Queue_get(VALUE self, VALUE hash)
 
     if (pq->comp_code != MQCC_FAILED)
     {
-        Message_deblock(message, &md, pq->p_buffer, messlen);  /* Extract MQMD and any other known MQ headers */
+        Message_deblock(message, &md, pq->p_buffer, messlen, pq->trace_level);  /* Extract MQMD and any other known MQ headers */
         return Qtrue;
     }
     else

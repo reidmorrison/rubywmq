@@ -20,7 +20,8 @@
    · tar -xvf ‘package.tar
 
    cd ext/wmq
-   Edit the file build.sh and edit the location of WebSphere (if not in /opt/mqm)
+   Edit the file build.sh and edit the location of WebSphere MQ (if not in /opt/mqm)
+   Also edit extconf.rb and extconf_client.rb with the location of WebSphere MQ (if not in /opt/mqm)
 
    Run build.sh
 
@@ -37,6 +38,7 @@
    Edit the file build.bat and edit the location of WebSphere MQ
    (if not in C:\Program Files\IBM\WebSphere MQ)
    and the location of Visual C++ 6 (if not C:\Program Files\Microsoft Visual Studio\VC98)
+   Also edit extconf.rb and extconf_client.rb with the location of WebSphere MQ (if not in C:\Program Files\IBM\WebSphere MQ)
 
    Run build.bat
 
