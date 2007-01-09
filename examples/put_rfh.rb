@@ -20,7 +20,7 @@
 #
 #          Calls MQPUT
 #
-require 'wmq/wmq_client'
+require 'wmq'
 
 # The Rules Format header (MQRFH) allows a list of name value pairs to be sent along
 # with a WMQ message. These name value pairs are represented as follows on the "wire":

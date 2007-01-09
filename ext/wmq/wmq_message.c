@@ -29,6 +29,7 @@ static ID ID_headers;
 static ID ID_data_set;
 static ID ID_size;
 static ID ID_name_value;
+static ID ID_xml;
 static ID ID_gsub;
 
 void Message_id_init()
@@ -40,6 +41,7 @@ void Message_id_init()
     ID_headers         = rb_intern("headers");
     ID_message         = rb_intern("message");
     ID_name_value      = rb_intern("name_value");
+    ID_xml             = rb_intern("xml");
     ID_gsub            = rb_intern("gsub");
 }
 
@@ -334,9 +336,10 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
     MQLONG  name_value_len = 0;
     PMQCHAR p_name_value = 0;
     VALUE   name_value = rb_hash_aref(hash, ID2SYM(ID_name_value));
+    MQLONG  pad = 0;
 
     if(parg->trace_level>2)
-        printf ("WMQ::Queue#put Found rf_header\n");
+        printf ("WMQ::Message#build_rf_header Found rf_header\n");
 
     if (!NIL_P(name_value))
     {
@@ -354,7 +357,13 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
         {
             rb_raise(rb_eArgError, ":name_value supplied in rf_header to WMQ::Message#headers must be either a String or a Hash");
         }
+
         name_value_len = RSTRING(name_value)->len;
+        if (name_value_len % 4)                           /* Not on 4 byte boundary ? */
+        {
+            rb_str_concat(name_value, rb_str_new("    ", 4 - (name_value_len % 4)));
+            name_value_len = RSTRING(name_value)->len;
+        }
         p_name_value   = RSTRING(name_value)->ptr;
     }
 
@@ -362,28 +371,22 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
 
     memcpy(p_data, &MQRFH_DEF, sizeof(MQRFH));
     to_mqrfh(hash, (PMQRFH)p_data);
+    ((PMQRFH)p_data)->StrucLength = sizeof(MQRFH) + name_value_len;
 
     *(parg->p_data_offset) += sizeof(MQRFH);
+    p_data += sizeof(MQRFH);
 
     if(name_value_len)
     {
-        strncpy(p_data + *(parg->p_data_offset), p_name_value, name_value_len);
+        memcpy(p_data, p_name_value, name_value_len);
         *(parg->p_data_offset) += name_value_len;
-/*--------------------------------------------------
- * TODO:
- *   To avoid problems with data conversion of the user data in some environments,
- *   it is recommended that StrucLength should be a multiple of four.
- * --------------------------------------------------*/
     }
 
     if(parg->trace_level>3)
-        printf ("WMQ::Queue#put Sizeof namevalue string:%ld\n", name_value_len);
-
-    ((PMQRFH)p_data)->StrucLength = sizeof(MQRFH) + name_value_len;
+        printf ("WMQ::Message#build_rf_header Sizeof namevalue string:%ld\n", name_value_len);
 
     if(parg->trace_level>2)
-        printf ("WMQ::Queue#put data offset:%ld\n", *(parg->p_data_offset));
-
+        printf ("WMQ::Message#build_rf_header data offset:%ld\n", *(parg->p_data_offset));
 }
 
 /*
@@ -399,19 +402,6 @@ static VALUE Message_remove_doubled_quotes(VALUE str)
     {
         return str;
     }
-}
-
-VALUE Message_test (VALUE self, VALUE hash, VALUE string)
-{
-    VALUE str = StringValue(string);
-    MQCHAR buffer[65535];
-    PMQBYTE p_buffer = buffer;
-    MQRFH rfh;
-    rfh.StrucLength = sizeof(MQRFH) + RSTRING(str)->len;
-    memcpy(p_buffer, &rfh, sizeof(MQRFH));
-    memcpy((p_buffer)+sizeof(MQRFH), RSTRING(str)->ptr, (RSTRING(str)->len)+1);  // Include null
-    Message_deblock_rf_header (hash, p_buffer);
-    return Qnil;
 }
 
 /*
@@ -590,3 +580,159 @@ MQLONG Message_deblock_rf_header (VALUE hash, PMQBYTE p_data)
 
     return size;
 }
+
+/*
+ * RFH2 Header can contain multiple XML-like strings
+ *   Message consists of:
+ *       MQRFH2
+ *       xml-string1-length  (MQLONG)
+ *       xml-string1         (Padded with spaces to match 4 byte boundary)
+ *       xml-string2-length  (MQLONG)
+ *       xml-string2         (Padded with spaces to match 4 byte boundary)
+ *       ....
+ */
+MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer)
+{
+    MQLONG  size = ((PMQRFH2)p_buffer)->StrucLength;
+    PMQBYTE p_data  = p_buffer + sizeof(MQRFH2);
+    PMQBYTE p_end   = p_buffer + size;                /* Points to byte after last character */
+    MQLONG  xml_len = 0;
+    VALUE   xml_ary = rb_ary_new();
+
+    PMQBYTE pChar;
+    size_t  length;
+    size_t  i;
+
+    rb_hash_aset(hash, ID2SYM(ID_xml), xml_ary);
+
+    while(p_data < p_end)
+    {
+        xml_len = *(PMQLONG)p_data;
+        p_data += sizeof(MQLONG);
+
+        if (p_data+xml_len > p_end)
+        {
+            printf("WMQ::Message#deblock_rf_header_2 Poison Message received, stopping further processing\n");
+            p_data = p_end;
+        }
+        else
+        {
+            /*
+             * Strip trailing spaces added as pad characters during put
+             */
+            length = 0;
+            pChar = p_data + xml_len - 1;
+            for (i = xml_len; i > 0; i--)
+            {
+                if (*pChar != ' ')
+                {
+                    length = i;
+                    break;
+                }
+                pChar--;
+            }
+            rb_ary_push(xml_ary, rb_str_new(p_data, length));
+            p_data += xml_len;
+        }
+    }
+
+    return size;
+}
+
+static int Message_build_rf_header_2_each(VALUE element, struct Message_build_header_arg* parg)
+{
+    VALUE  str = StringValue(element);
+    MQLONG length = RSTRING(str)->len;
+
+    if (length % 4)                           /* Not on 4 byte boundary ? */
+    {
+        static const char * blanks = "    ";
+        MQLONG pad     = 4 - (length % 4);
+        MQLONG len     = length + pad;
+        PMQBYTE p_data = Message_autogrow_data_buffer(parg, sizeof(len) + length + pad);
+
+        memcpy(p_data, (void*) &len, sizeof(len));    /* Start with MQLONG length indicator */
+        p_data += sizeof(len);
+        memcpy(p_data, RSTRING(str)->ptr, length);
+        p_data += length;
+        memcpy(p_data, blanks, pad);
+        p_data += pad;
+        *(parg->p_data_offset) += sizeof(len) + length + pad;
+    }
+    else
+    {
+        PMQBYTE p_data = Message_autogrow_data_buffer(parg, sizeof(length) + length);
+
+        memcpy(p_data, (void*) &length, sizeof(length));  /* Start with MQLONG length indicator */
+        p_data += sizeof(length);
+        memcpy(p_data, RSTRING(str)->ptr, length);
+        p_data += length;
+        *(parg->p_data_offset) += sizeof(length) + length;
+    }
+
+    return 0;
+}
+
+/*
+ * RFH2 Header can contain multiple XML-like strings
+ *   Message consists of:
+ *       MQRFH2
+ *       xml-string1-length  (MQLONG)
+ *       xml-string1         (Padded with spaces to match 4 byte boundary)
+ *       xml-string2-length  (MQLONG)
+ *       xml-string2         (Padded with spaces to match 4 byte boundary)
+ *       ....
+ *
+ *  The input data is either a String or an Array of Strings
+ *  E.g.
+ *
+ *  {
+ *    :header_type =>:rf_header_2,
+ *    :xml => '<hello>to the world</hello>'
+ *  }
+ *           OR
+ *  {
+ *    :header_type =>:rf_header_2,
+ *    :xml => ['<hello>to the world</hello>', '<another>xml like string</another>'],
+ *  }
+ *
+ */
+void Message_build_rf_header_2(VALUE hash, struct Message_build_header_arg* parg)
+{
+    static  MQRFH2 MQRFH2_DEF = {MQRFH2_DEFAULT};
+    MQLONG  rfh2_offset = *(parg->p_data_offset);
+    PMQBYTE p_data;
+    VALUE   xml = rb_hash_aref(hash, ID2SYM(ID_xml));
+
+    if(parg->trace_level>2)
+        printf ("WMQ::Message#build_rf_header_2 Found rf_header_2\n");
+
+    /* Add MQRFH2 Header, ensure that their is enough space */
+    p_data = Message_autogrow_data_buffer(parg, sizeof(MQRFH2));
+    memcpy(p_data, &MQRFH2_DEF, sizeof(MQRFH2));
+    to_mqrfh(hash, (PMQRFH2)p_data);
+    *(parg->p_data_offset) += sizeof(MQRFH2);
+
+    if (!NIL_P(xml))
+    {
+        if(TYPE(xml) == T_ARRAY)
+        {
+            rb_iterate (rb_each, xml, Message_build_rf_header_2_each, (VALUE)parg);
+        }
+        else if(TYPE(xml) != T_STRING)
+        {
+            Message_build_rf_header_2_each(xml, parg);
+        }
+        else
+        {
+            rb_raise(rb_eArgError, ":name_value supplied in rf_header_2 to WMQ::Message#headers must be a String or an Array");
+        }
+    }
+
+    /* Set total length in MQRFH2 */
+    ((PMQRFH)(*(parg->pp_buffer) + rfh2_offset))->StrucLength = *(parg->p_data_offset) - rfh2_offset;
+
+    if(parg->trace_level>2)
+        printf ("WMQ::Message#build_rf_header_2 data offset:%ld\n", *(parg->p_data_offset));
+}
+

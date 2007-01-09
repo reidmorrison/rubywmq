@@ -112,6 +112,8 @@ VALUE Message_clear(VALUE self);
 PMQBYTE Message_autogrow_data_buffer(struct Message_build_header_arg* parg, MQLONG additional_size);
 void    Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg);
 MQLONG  Message_deblock_rf_header (VALUE hash, PMQBYTE p_data);
+void    Message_build_rf_header_2 (VALUE hash, struct Message_build_header_arg* parg);
+MQLONG  Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_data);
 
 void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace_level,
                    VALUE parms, PPMQVOID pp_buffer, PMQLONG p_total_length, PMQMD pmqmd);

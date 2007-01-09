@@ -154,10 +154,30 @@ class TestTest < Test::Unit::TestCase
     assert_equal(1, message.headers.size)
     reply_header = message.headers[0]
 
-    #header[:format].strip!  # Constant above has trailing spaces that will not be returned
     header.each_pair{|key, value| assert_equal(value, reply_header[key])}
   end
 
+  def verify_multiple_headers(headers, format)
+    data = 'Some Test Data'
+    message = WMQ::Message.new
+    message.data = data
+    message.descriptor[:format] = WMQ::MQFMT_RF_HEADER_2
+    message.headers = headers
+    #assert_equal(true,@queue_manager.put(:q_name=>@in_queue.name, :message=>message))
+    assert_equal(true,@out_queue.put(:message=>message))
+
+    message = WMQ::Message.new
+    assert_equal(true, @in_queue.get(:message=>message))
+    assert_equal(data, message.data)
+    assert_equal(headers.size, message.headers.size)
+    count = 0
+    headers.each do |header|
+      reply_header = message.headers[count]
+      header.each_pair{|key, value| assert_equal(value, reply_header[key])}
+      count = count + 1
+    end
+  end
+  
   def test_dlh
     puts '****** test_dlh ******'
     dlh = {:header_type     =>:dead_letter_header,
@@ -228,12 +248,80 @@ class TestTest < Test::Unit::TestCase
   
   def test_rf_header
     puts '****** test_rf_header ******'
-    # Note: Does not yet support quotes or spaces in names or values
-    rfh = {:header_type     =>:rf_header,
-           :name_value => {' name   s' => '  v a l u e 1  ', 
-                           'n a m e 2 ' => 'v a l u e  2', 
-                           'name3'=>['value3', '', 'value 43']},
+    # Note: Does not yet support empty names
+    rfh = {:header_type =>:rf_header,
+           :name_value  => {' name   s' => '  v a l u e 1  ', 
+                            'n a m e 2 ' => 'v a l u e  2', 
+                            'name3'=>['value3', '', 'value 43']},
           }
     verify_header(rfh, WMQ::MQFMT_RF_HEADER)
+  end
+  
+  def test_rf_header_2
+    puts '****** test_rf_header_2 ******'
+    rfh2 = {:header_type =>:rf_header_2,
+            :xml => ['<hello>to the world</hello>', '<another>xml like string</another>'],
+          }
+    verify_header(rfh2, WMQ::MQFMT_RF_HEADER_2)
+  end
+  
+  def test_multiple_headers
+    puts '****** test_multiple_headers ******'
+    headers = [{:header_type      => :rf_header_2,
+                :xml              => ['<hello>to the world</hello>', '<another>xml like string</another>'],
+                :format           => WMQ::MQFMT_RF_HEADER},
+                
+               {:header_type      => :rf_header,
+                :name_value       => {' name   s' => '  v a l u e 1  ', 
+                                      'n a m e 2 ' => 'v a l u e  2', 
+                                      'name3'=>['value3', '', 'value 43']},
+                :format           => WMQ::MQFMT_IMS},
+                
+               {:header_type      => :ims,
+                :l_term_override  => 'LTERM',
+                :reply_to_format  => WMQ::MQFMT_STRING,
+                :format           => WMQ::MQFMT_RF_HEADER},
+                
+               {:header_type      => :rf_header,
+                :name_value       => {' name   s' => '  v a l u e 1  ', 
+                                      'n a m e 2 ' => 'v a l u e  2', 
+                                      'name3'=>['value3', '', 'value 43']},
+                :format           => WMQ::MQFMT_CICS},
+
+               {:header_type      => :cics,
+                :reason           => WMQ::MQRC_UNKNOWN_REMOTE_Q_MGR,
+                :facility         => 'TOKEN123',
+                :reply_to_format  => WMQ::MQFMT_STRING,
+                :format           => WMQ::MQFMT_RF_HEADER_2},
+
+               {:header_type      => :rf_header_2,
+                :xml              => ['<hello>to the world</hello>', '<another>xml like string</another>'],
+                :format           => WMQ::MQFMT_XMIT_Q_HEADER},
+                
+               {:header_type      => :xmit_q_header,
+                :remote_q_name    => 'SOME_REMOTE_QUEUE',
+                :remote_q_mgr_name=> 'SOME_REMOTE_Q_MGR',
+                :msg_type         => WMQ::MQMT_REQUEST,
+                :msg_id           => 'my message Id',
+                :format           => WMQ::MQFMT_STRING},
+              ]              
+    verify_multiple_headers(headers, WMQ::MQFMT_RF_HEADER_2)
+  end
+  
+  def in_progress_test_xmit_multiple_headers
+    puts '****** test_multiple_headers ******'
+    headers = [{:header_type      => :xmit_q_header,
+                :remote_q_name    => 'SOME_REMOTE_QUEUE',
+                :remote_q_mgr_name=> 'SOME_REMOTE_Q_MGR',
+                :msg_type         => WMQ::MQMT_REQUEST,
+                :msg_id           => 'my message Id',
+                :format           => WMQ::MQFMT_IMS},
+                
+               {:header_type      => :ims,
+                :l_term_override  => 'LTERM',
+                :reply_to_format  => WMQ::MQFMT_STRING,
+                :format           => WMQ::MQFMT_STRING},
+              ]
+    verify_multiple_headers(headers, WMQ::MQFMT_XMIT_Q_HEADER)
   end
 end

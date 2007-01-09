@@ -20,7 +20,6 @@ VALUE wmq_queue;
 VALUE wmq_queue_manager;
 VALUE wmq_message;
 VALUE wmq_exception;
-    VALUE Message_test (VALUE hash, VALUE string);
 
 void Init_wmq_server() {
     VALUE qmgr, wmq;
@@ -66,11 +65,6 @@ void Init_wmq_server() {
     rb_define_method(wmq_message, "clear", Message_clear, 0);                       /* in wmq_message.c */
 
     /*
-     * Temporary
-     */
-    rb_define_method(wmq_message, "test", Message_test, 2);
-
-    /*
      * WMQException is thrown whenever an MQ operation fails and
      * exception_on_error is true
      */
@@ -96,5 +90,3 @@ void Init_wmq_server() {
 void Init_wmq_client() {
     Init_wmq_server();
 }
-
-

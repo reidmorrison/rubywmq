@@ -28,6 +28,14 @@
       # Message Descriptor 1
       {:file=>'cmqc.h', :struct=>'MQMD1'},
 
+      # Rules and formatting header2
+      {:file=>'cmqc.h', :struct=>'MQRFH2', :header=>'rf_header_2', :struct_id=>'MQRFH_STRUC_ID',
+       :custom=>true }, # Implement custom Message_build_rf_header_2 and Message_deblock_rf_header_2
+
+      # Rules and formatting header
+      {:file=>'cmqc.h', :struct=>'MQRFH', :header=>'rf_header', 
+       :custom=>true }, # Implement custom Message_build_rf_header and Message_deblock_rf_header
+
       # Dead Letter Header
       {:file=>'cmqc.h', :struct=>'MQDLH', :header=>'dead_letter_header',
        :defaults=>'MQDLH_DEF.CodedCharSetId = MQCCSI_INHERIT;'},
@@ -40,13 +48,6 @@
 
       # IMS information header
       {:file=>'cmqc.h', :struct=>'MQIIH', :header=>'ims'},
-
-      # Rules and formatting header
-      {:file=>'cmqc.h', :struct=>'MQRFH', :header=>'rf_header', 
-       :custom=>true }, # Implement custom Message_build_mqrhf and Message_deblock_mqrhf
-
-      # Rules and formatting header2
-      {:file=>'cmqc.h', :struct=>'MQRFH2'},
 
       # Reference message header (send large files over channels)
       {:file=>'cmqc.h', :struct=>'MQRMH', :header=>'ref_msg_header'},
@@ -203,19 +204,19 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
     wmq_structs.each do |struct|
       if struct[:header]
 %>        /* <%=struct[:struct]%>: <%=struct[:header]%> */
-        if(strncmp (p_format, MQFMT_<%=struct[:header].upcase%>, sizeof(MQ_FORMAT_LENGTH)) == 0)
+        if(strncmp(p_format, MQFMT_<%=struct[:header].upcase%>, MQ_FORMAT_LENGTH) == 0)
         {
             VALUE hash = rb_hash_new();
             P<%=struct[:struct]%> p_header = (P<%=struct[:struct]%>)p_data;
             
             if(trace_level>2)
-                printf ("WMQ::Message#deblock Found <%=struct[:header]%>\n");
+                printf("WMQ::Message#deblock Found <%=struct[:header]%>\n");
                 
-            if(memcmp (p_header->StrucId, <%=struct[:struct].upcase%>_STRUC_ID, sizeof(p_header->StrucId)) != 0)
+            if(memcmp(p_header->StrucId, <%=struct[:struct_id] ? struct[:struct_id] : "#{struct[:struct].upcase}_STRUC_ID"%>, sizeof(p_header->StrucId)) != 0)
             {
                 p_format = 0;    /* Bad Message received, do not deblock headers */
                 if(trace_level>1)
-                    printf ("WMQ::Message#deblock MQFMT_<%=struct[:header].upcase%> received, but message does not contain <%=struct[:struct].upcase%>\n");
+                    printf("WMQ::Message#deblock MQFMT_<%=struct[:header].upcase%> received, but message does not contain <%=struct[:struct].upcase%>\n");
             }
             else
             {
@@ -225,7 +226,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
 
                 p_format    = <%=if struct[:no_format] then '0' else 'p_header->Format' end%>;
                 size        = <%=if struct[:custom] then
-                                   'Message_deblock_rf_header (hash, p_data)'
+                                   "Message_deblock_#{struct[:header]} (hash, p_data)"
                                  elsif struct[:elements].include?(['MQLONG', 'StrucLength'])
                                    'p_header->StrucLength'
                                  else
