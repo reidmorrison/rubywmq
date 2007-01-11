@@ -19,8 +19,6 @@
 #
 #          Set the correlation id to a text string
 #
-#          Calls MQPUT1
-#
 require 'wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

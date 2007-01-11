@@ -15,6 +15,8 @@
  * --------------------------------------------------------------------------*/
 
 #include "wmq.h"
+#include "decode_rfh.h"
+
 /* --------------------------------------------------
  * Initialize Ruby ID's for Message Class
  *
@@ -389,18 +391,34 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
         printf ("WMQ::Message#build_rf_header data offset:%ld\n", *(parg->p_data_offset));
 }
 
-/*
- * Replace a pair of double quotes with a single occurence
- */
-static VALUE Message_remove_doubled_quotes(VALUE str)
+static void Message_deblock_rf_header_each_pair(const char *p_name, const char *p_value, void* p_name_value_hash)
 {
-    if(memchr(RSTRING(str)->ptr,'"',RSTRING(str)->len) != NULL)
+    VALUE name_value_hash = (VALUE)p_name_value_hash;
+    //printf("[%s] = [%s]\n", name, value);
+    VALUE key   = rb_str_new2(p_name);
+    VALUE value = rb_str_new2(p_value);
+
+    /*
+     * If multiple values arrive for the same name (key) need to put values in an array
+     */
+    VALUE existing = rb_hash_aref(name_value_hash, key);
+    if(NIL_P(existing))
     {
-        return rb_funcall(str, ID_gsub, 2, rb_str_new2("\"\""), rb_str_new2("\""));
+        rb_hash_aset(name_value_hash, key, value);
     }
     else
     {
-        return str;
+        if(TYPE(existing) == T_ARRAY)     /* Add to existing Array */
+        {
+            rb_ary_push(existing, value);
+        }
+        else                              /* Convert existing entry into an array */
+        {
+            VALUE array = rb_ary_new();
+            rb_ary_push(array, existing);
+            rb_ary_push(array, value);
+            rb_hash_aset(name_value_hash, key, array);
+        }
     }
 }
 
@@ -409,171 +427,32 @@ static VALUE Message_remove_doubled_quotes(VALUE str)
  *   The RF Header has already been deblocked into hash
  *   p_data points to the beginning of the RF Header structure
  *
+ *   msg_len is the length of the remainder of the message from this header onwards
+ *           It includes the length of any data that may follow
+ *
  * Returns the length of RF Header plus the size of any custom data following it
  */
-MQLONG Message_deblock_rf_header (VALUE hash, PMQBYTE p_data)
+MQLONG Message_deblock_rf_header (VALUE hash, PMQBYTE p_data, MQLONG data_len)
 {
-    MQLONG  size = ((PMQRFH)p_data)->StrucLength;
-    PMQBYTE p_start = p_data + sizeof(MQRFH);
-    PMQBYTE p_end   = p_data + size;
-    PMQBYTE p_current = p_start;
-    PMQBYTE p_name = 0;
-    PMQBYTE p_name_end = 0;
-    PMQBYTE p_value = 0;
-    PMQBYTE p_last = 0;
-    MQBYTE  current_delimiter = ' ';
-    VALUE   name_value_hash = rb_hash_new();
-    VALUE   existing;
-    VALUE   key;
-    VALUE   value;
+    MQLONG size = ((PMQRFH)p_data)->StrucLength;
+    VALUE  name_value_hash = rb_hash_new();
 
-    /* Skip leading spaces */
-    while (p_current < p_end && *p_current == ' ')
+    rfh_toktype_t toktype;
+
+    if(size > data_len)                               /* Poison Message */
     {
-        p_current++;
+        printf("WMQ::Message_deblock_rf_header StrucLength supplied in MQRFH exceeds total message length\n");
+        return 0;
     }
 
-    if(*p_current!='"')
+    toktype = rfh_decode_name_val_str(p_data + sizeof(MQRFH),
+                                      size - sizeof(MQRFH),
+                                      Message_deblock_rf_header_each_pair,
+                                      (void*)name_value_hash);
+
+    if (toktype != TT_END)
     {
-        p_name = p_current;
-    }
-
-    /* printf("Name Value:'%s'\n", p_start);  */
-
-    while (p_current <= p_end)
-    {
-        if (p_current == p_end || *p_current == ' ' || *p_current == '"')
-        {
-            if(current_delimiter == ' ')
-            {
-                /* Skip multiple spaces until next character */
-                while (p_current < p_end && *p_current == ' ')
-                {
-                    p_current++;
-                }
-            }
-
-            if (p_current < p_end)
-            {
-                if (current_delimiter == '"')
-                {
-                    if (*p_current == ' ')
-                    {
-                        p_last = p_current;
-                        p_current++;
-                        continue;
-                    }
-
-                    if (*p_current == '"')
-                    {
-                        p_current++;
-                        if (*p_current == '"')        /* Detect Double Quotes */
-                        {
-                            p_current++;
-                        }
-                        else
-                        {
-                            current_delimiter = ' ';
-                        }
-                        continue;
-                    }
-                }
-                else if (*p_current == '"')
-                {
-                    p_current++;
-
-                    /*
-                     * Check for empty string
-                     * -. We already have start "
-                     * 1. Is current char the end " ?
-                     * 2. Is the next character a ' ' ?
-                     *    Or, end of data
-                     */
-                    if (*p_current == '"' &&          /* Check for empty string */
-                        (p_end == p_current + 1 ||
-                         *(p_current + 1) == ' ') )
-                    {
-                        if(!p_name)
-                        {
-                            /*
-                             * TODO: Does not yet support empty name/key
-                             *       (Extremely unlikely, but still possible)
-                             */
-                            p_name     = p_current;
-                            p_current++;
-                        }
-                        else
-                        {
-                            p_value    = p_current+1;
-                            p_name_end = p_last;
-                            p_last     = p_current;
-                            p_current++;
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        current_delimiter = '"';
-                    }
-                }
-            }
-
-/*          printf("p_current :%ld\n", p_current);
-            printf("*p_current:%c\n", *p_current);
-            printf("p_last    :%ld\n", p_last);
-            printf("p_name    :%ld\n", p_name);
-            printf("p_name_end:%ld\n", p_name_end);
-            printf("p_value   :%ld\n", p_value);
-            printf("p_end     :%ld\n", p_end);
-            printf("delimiter :'%c'\n", current_delimiter);
-            printf("---------------------\n"); */
-
-            if(!p_name)
-            {
-                p_name = p_current;
-            }
-            else if(p_value)                          /* End of Value */
-            {
-                key   = Message_remove_doubled_quotes(rb_str_new(p_name, p_name_end - p_name + 1));
-                value = Message_remove_doubled_quotes(rb_str_new(p_value, p_last - p_value + 1));
-
-          /*      printf("Found Name:'%s' Value:'%s'\n", RSTRING(key)->ptr, RSTRING(value)->ptr);   */
-
-                /*
-                 * If multiple values arrive for the same name (key) need to put values in an array
-                 */
-                existing = rb_hash_aref(name_value_hash, key);
-                if(NIL_P(existing))
-                {
-                    rb_hash_aset(name_value_hash, key, value);
-                }
-                else
-                {
-                    if(TYPE(existing) == T_ARRAY)     /* Add to existing Array */
-                    {
-                        rb_ary_push(existing, value);
-                    }
-                    else                              /* Convert existing entry into an array */
-                    {
-                        VALUE array = rb_ary_new();
-                        rb_ary_push(array, existing);
-                        rb_ary_push(array, value);
-                        rb_hash_aset(name_value_hash, key, array);
-                    }
-                }
-
-                p_name = p_current;
-                p_name_end = 0;
-                p_value = 0;
-            }
-            else
-            {
-                p_value = p_current;
-                p_name_end = p_last;
-            }
-        }
-        p_last = p_current;
-        p_current++;
+        printf("Could not parse rfh name value string, reason %s\n",rfh_toktype_to_s(toktype));
     }
 
     rb_hash_aset(hash, ID2SYM(ID_name_value), name_value_hash);
@@ -591,7 +470,7 @@ MQLONG Message_deblock_rf_header (VALUE hash, PMQBYTE p_data)
  *       xml-string2         (Padded with spaces to match 4 byte boundary)
  *       ....
  */
-MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer)
+MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer, MQLONG data_len)
 {
     MQLONG  size = ((PMQRFH2)p_buffer)->StrucLength;
     PMQBYTE p_data  = p_buffer + sizeof(MQRFH2);
@@ -602,6 +481,12 @@ MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer)
     PMQBYTE pChar;
     size_t  length;
     size_t  i;
+
+    if(size > data_len)                               /* Poison Message */
+    {
+        printf("WMQ::Message_deblock_rf_header_2 StrucLength supplied in MQRFH exceeds total message length\n");
+        return 0;
+    }
 
     rb_hash_aset(hash, ID2SYM(ID_xml), xml_ary);
 

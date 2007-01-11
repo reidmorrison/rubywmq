@@ -818,7 +818,7 @@ VALUE Queue_get(VALUE self, VALUE hash)
  * Parameters:
  * * A Hash consisting of one or more of the named parameters
  * * Summary of parameters and their WebSphere MQ equivalents
- *  queue.get(                                             # WebSphere MQ Equivalents:
+ *  queue.put(                                             # WebSphere MQ Equivalents:
  *   :message            => my_message,                    # n/a : Instance of Message
  *   :data               => "Hello World",                 # n/a : Data to send
  *   :sync               => false,                         # MQGMO_SYNCPOINT

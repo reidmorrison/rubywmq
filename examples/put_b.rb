@@ -15,10 +15,9 @@
 ################################################################################
 
 #
-# Sample : put() : Put a single message to a queue
+# Sample : put() : Put two Messages to a queue
 #          Open the queue so that multiple puts can be performed
 #          Ensure that all messages have the same correlation id
-#          Calls MQPUT
 #
 require 'wmq'
 

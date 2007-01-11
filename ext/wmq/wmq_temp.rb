@@ -17,7 +17,7 @@
 module WMQ
 
   # Temporary placeholder until the following code is moved to 'C'
-   
+
   #
   class QueueManager
     def method_missing(name, *args)
@@ -29,24 +29,154 @@ module WMQ
         raise("Invalid arguments supplied to QueueManager#:#{name}, args:#{args}")
       end
     end
-    
+
     # Execute any MQSC command against the queue manager
-    # 
+    #
     # Example
     #   require 'wmq/wmq'
     #   require 'wmq/wmq_const_admin'
     #   WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
-    #     qmgr.mqsc('dis ql(*)').each {|item| p item }  
+    #     qmgr.mqsc('dis ql(*)').each {|item| p item }
     #   end
     def mqsc(mqsc_text)
       self.execute(:command=>:escape, :escape_type=>WMQ::MQET_MQSC, :escape_text=>mqsc_text).collect {|item| item[:escape_text] }
     end
+
+    # Put a reply message back to the sender
+    #
+    #   The :message is sent to the queue and queue manager specified in the
+    #   :reply_to_q and :reply_to_q_mgr propoerties of the :request_message.
+    #
+    #   The following rules are followed before sending the reply:
+    #   - Only send replies to Request messages. No reply for Datagrams
+    #   - Set the message type to Reply when replying to a request message
+    #   - Reply with:
+    #     - Remaining Expiry (Ideally deduct any processing time since get)
+    #     - Same priority as received message
+    #     - Same persistence as received message
+    #   - Adhere to the Report options supplied for message and correlation id's
+    #       in reply message
+    #   - All headers must be returned on reply messages
+    #     - This allows the calling application to store state information
+    #       in these headers
+    #     - Unless of course if the relevant header is input only and used
+    #       for completing the request
+    #       - In this case any remaining headers should be returned
+    #         to the caller
+    #
+    # Parameters:
+    #   * :request_message The message originally received
+    #   * All the other parameters are the same as QueueManager#put
+    #
+    def put_to_reply_q(parms)
+      # Send replies only if message type is request
+      if parms[:request_message].descriptor[:msg_type] == WMQ::MQMT_REQUEST
+        request = parms.delete(:request_message)
+
+        reply = parms[:message] ||= Message.new(:data=>parms[:data])
+        reply.descriptor[:msg_type]   = WMQ::MQMT_REPLY
+        reply.descriptor[:expiry]     = request.descriptor[:expiry]
+        reply.descriptor[:priority]   = request.descriptor[:priority]
+        reply.descriptor[:persistence]= request.descriptor[:persistence]
+
+        # Set Message Id based on report options supplied
+        if request.descriptor[:report] | MQRO_PASS_MSG_ID
+          reply.descriptor[:msg_id] = request.descriptor[:msg_id]
+        end
+
+        # Set Correlation Id based on report options supplied
+        if request.descriptor[:report] | MQRO_PASS_CORREL_ID
+          reply.descriptor[:correl_id] = request.descriptor[:correl_id]
+        else
+          reply.descriptor[:msg_id] = request.descriptor[:correl_id]
+        end
+
+        parms[:q_name]    = request.descriptor[:reply_to_q]
+        parms[:q_mgr_name]= request.descriptor[:reply_to_q_mgr]
+        return put(parms)
+      else
+        return false
+      end
+    end
+
+    # Put a message to the Dead Letter Queue
+    #
+    #   If an error occurs when processing a datagram message
+    #   it is necessary to move the message to the dead letter queue.
+    #   I.e. An error message cannot be sent back to the sender because
+    #        the original message was not a request message.
+    #          I.e. msg_type != WMQ::MQMT_REQUEST
+    #
+    #   All existing message data, message descriptor and message headers
+    #   are retained.
+    #
+    def put_to_dead_letter_q(parms)
+      message = parms[:message] ||= Message.new(:data=>parms[:data])
+      dlh = {
+        :header_type     =>:dead_letter_header,
+        :reason          =>parms.delete(:reason),
+        :dest_q_name     =>queue.name,
+        :dest_q_mgr_name =>qmgr.name,
+        :format          =>message.descriptor[:format]}
+
+      message.descriptor[:format]=WMQ::MQFMT_DEAD_LETTER_HEADER
+      message.headers.unshift(dlh)
+      parms[:q_name]='SYSTEM.DEAD.LETTER.QUEUE'
+      return qmgr.put(parms)
+    end
+
   end
 
+  # Message contains the message descriptor (MQMD), data
+  # and any headers.
+  #
+  # Message has the following attributes:
+  # * descriptor = {
+  #                                                           # WebSphere MQ Equivalent
+  #     :format             => WMQ::MQFMT_STRING ...          # MQMD.Format
+  #     :original_length    => Number                         # MQMD.OriginalLength
+  #     :priority           => 0 .. 9                         # MQMD.Priority
+  #     :put_time           => String                         # MQMD.PutTime
+  #     :msg_id             => String                         ...
+  #     :expiry             => Number
+  #     :persistence        => Number
+  #     :reply_to_q         => String
+  #     :correl_id          => String
+  #     :feedback           => Number
+  #     :offset             => Number
+  #     :report             => Number
+  #     :msg_flags          => Number
+  #     :reply_to_q_mgr     => String
+  #     :appl_identity_data => String
+  #     :put_appl_name      => String
+  #     :user_identifier    => String
+  #     :msg_seq_number     => Number
+  #     :appl_origin_data   => String
+  #     :accounting_token   => String
+  #     :backout_count      => Number
+  #     :coded_char_set_id  => Number
+  #     :put_appl_type      => Number
+  #     :msg_type           => Number
+  #     :group_id           => String
+  #     :put_date           => String
+  #     :encoding           => Number
+  #   }
+  # * data => String
+  # * headers => Array of Hashes
+  #    The following headers are supported:
+  #   * Rules And Formatting Header (RFH)
+  #       :header_type => :rf_header
+  #       :....
+  #   * Rules and Formatting V2 Header (RFH2)
+  #       ....
+  #   * Dead Letter Header
+  #   * CICS Header
+  #   * IMS Header
+  #   * Transmission Queue Header
+  #   * ...
   class Message
     attr_reader :data, :descriptor, :headers
     attr_writer :data, :descriptor, :headers
-    
   end
-  
+
 end

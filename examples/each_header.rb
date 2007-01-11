@@ -19,16 +19,18 @@
 #          If no messages are on the queue, the program
 #          completes without waiting
 #
-#          Calls MQGET
-#
-require 'wmq/wmq_client'
+require 'wmq'
 
-WMQ::QueueManager.connect(:q_mgr_name=>'REID',:connection_name=>'localhost(1414)') do |qmgr|
+WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
   qmgr.open_queue(:q_name=>'TEST.DEAD', :mode=>:browse) do |queue|
     queue.each do |message|
       puts "Data Received: #{message.data}"
-      p message.headers
+      
+      puts "Message Descriptor:"
       p message.descriptor
+      
+      puts "Headers Received:"
+      message.headers.each {|header| p header}
     end
   end
   puts 'Completed.'

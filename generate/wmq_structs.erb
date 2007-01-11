@@ -53,7 +53,7 @@
       {:file=>'cmqc.h', :struct=>'MQRMH', :header=>'ref_msg_header'},
 
       # Trigger Message
-      {:file=>'cmqc.h', :struct=>'MQTM', :header=>'trigger', :no_format=>true},
+      {:file=>'cmqc.h', :struct=>'MQTM', :header=>'trigger', :format=>'0'},
 
       # Trigger Message 2 (character format)
       {:file=>'cmqc.h', :struct=>'MQTMC2'},
@@ -62,7 +62,7 @@
       {:file=>'cmqc.h', :struct=>'MQWIH', :header=>'work_info_header'},
 
       # Transmission-queue header - Todo: Need to deal with MQMDE
-      {:file=>'cmqc.h', :struct=>'MQXQH', :header=>'xmit_q_header', :no_format=>true},
+      {:file=>'cmqc.h', :struct=>'MQXQH', :header=>'xmit_q_header', :format=>'p_header->MsgDesc.Format'},
     ]
     
     wmq_structs.each do |struct|
@@ -178,10 +178,6 @@ void <%=direction.downcase%>_<%=struct_name.downcase%>(VALUE hash, <%=struct_nam
 %>}
 <%    end 
     end # wmq_structs.each 
-
-
-#    str << wmq_deblock(structs)
-#  def wmq_deblock(structs)
 %>
 /* --------------------------------------------------------------------------
  *  Extract message data and headers
@@ -212,7 +208,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
             if(trace_level>2)
                 printf("WMQ::Message#deblock Found <%=struct[:header]%>\n");
                 
-            if(memcmp(p_header->StrucId, <%=struct[:struct_id] ? struct[:struct_id] : "#{struct[:struct].upcase}_STRUC_ID"%>, sizeof(p_header->StrucId)) != 0)
+            if(memcmp(p_header->StrucId, <%=struct[:struct_id] || "#{struct[:struct].upcase}_STRUC_ID"%>, sizeof(p_header->StrucId)) != 0)
             {
                 p_format = 0;    /* Bad Message received, do not deblock headers */
                 if(trace_level>1)
@@ -224,14 +220,15 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
                 rb_hash_aset(hash, ID2SYM(ID_header_type), ID2SYM(ID_<%=struct[:header]%>));
                 rb_ary_push(headers, hash);
 
-                p_format    = <%=if struct[:no_format] then '0' else 'p_header->Format' end%>;
+                p_format    = <%=struct[:format] || 'p_header->Format'%>;
                 size        = <%=if struct[:custom] then
-                                   "Message_deblock_#{struct[:header]} (hash, p_data)"
+                                   "Message_deblock_#{struct[:header]} (hash, p_data, data_length);\n"+
+                                   "                if (!size) { p_format = 0; }    /* Poison Message */"
                                  elsif struct[:elements].include?(['MQLONG', 'StrucLength'])
-                                   'p_header->StrucLength'
+                                   'p_header->StrucLength;'
                                  else
-                                   "sizeof(#{struct[:struct]})"
-                                 end %>;
+                                   "sizeof(#{struct[:struct]});"
+                                 end %>
                 p_data      += size;
                 data_length -= size;
                 
@@ -243,7 +240,6 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
 <%
       end
     end # wmq_structs.each 
-    # #{if struct[:no_format] then "0" else "strncmp (((P"+struct[:struct]+")p_data)->Format, MQFMT_"+struct[:header].upcase+", sizeof(MQ_FORMAT_LENGTH)) != 0" end}    
 %>        {
             p_format = 0;
         }

@@ -18,8 +18,6 @@
 # Sample : get() : Retrieve a single message from a queue
 #          If no messages are on the queue, message.data is nil
 #
-#          Calls MQGET
-#
 # Force Client connection in case we have a queue manager locally
 require 'wmq/wmq_client'
 
@@ -31,10 +29,13 @@ WMQ::QueueManager.connect(
 
     message = WMQ::Message.new
     if queue.get(:message => message)
+      puts "Data Received: #{message.data}"
+      
+      puts "Message Descriptor:"
+      p message.descriptor
+      
       puts "Headers Received:"
       message.headers.each {|header| p header}
-      
-      puts "Data Received: #{message.data}"
     else
       puts 'No message available'
     end

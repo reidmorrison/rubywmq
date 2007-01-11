@@ -18,8 +18,6 @@
 # Sample : each() : Retrieve all messages from a queue that
 #          have the same correlation id
 #
-#          Calls MQGET
-#
 require 'wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

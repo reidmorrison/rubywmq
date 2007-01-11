@@ -16,7 +16,6 @@
 
 #
 # Sample : put1() : Put a single message to a queue
-#          Calls MQPUT1
 #
 require 'wmq'
 

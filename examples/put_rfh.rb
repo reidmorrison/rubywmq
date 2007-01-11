@@ -18,8 +18,6 @@
 # Sample : put() : Put a message to a queue with a Refernce header
 #          Open the queue so that multiple puts can be performed
 #
-#          Calls MQPUT
-#
 require 'wmq'
 
 # The Rules Format header (MQRFH) allows a list of name value pairs to be sent along

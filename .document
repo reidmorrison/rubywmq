@@ -5,4 +5,5 @@ ext/wmq/wmq_message.c
 ext/wmq/wmq_queue.c
 ext/wmq/message.rb
 ext/wmq/wmq_const_admin.rb
+ext/wmq/wmq_temp.rb
 README

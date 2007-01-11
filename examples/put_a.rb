@@ -18,8 +18,6 @@
 # Sample : put() : Put a single message to a queue
 #          Open the queue so that multiple puts can be performed
 #
-#          Calls MQPUT
-#
 require 'wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

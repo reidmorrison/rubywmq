@@ -1,17 +1,14 @@
 # Shift include path to use locally built copy of rubwmq
 $:.unshift '../ext'
 
-require 'wmq/wmq_client'
+require 'wmq'
 require 'wmq/wmq_const_admin'
 require 'test/unit'
 class TestTest < Test::Unit::TestCase
 
   def setup
     puts '****** setup: start ******'
-    @queue_manager = WMQ::QueueManager.new(:q_mgr_name => 'REID',
-                                           :trace_level=>0, # Not greater than 2 !
-                                           :channel_name=>'SYSTEM.DEF.SVRCONN',
-                                           :connection_name=>'localhost(1414)')
+    @queue_manager = WMQ::QueueManager.new(:q_mgr_name => 'REID')
     @queue_manager.connect
 
     # Create Queue and clear any messages from the queue
@@ -140,28 +137,14 @@ class TestTest < Test::Unit::TestCase
   end
 
   def verify_header(header, format)
-    data = 'Some Test Data'
-    message = WMQ::Message.new
-    message.data = data
-    message.descriptor[:format] = format
-    message.headers << header
-    #assert_equal(true,@queue_manager.put(:q_name=>@in_queue.name, :message=>message))
-    assert_equal(true,@out_queue.put(:message=>message))
-
-    message = WMQ::Message.new
-    assert_equal(true, @in_queue.get(:message=>message))
-    assert_equal(data, message.data)
-    assert_equal(1, message.headers.size)
-    reply_header = message.headers[0]
-
-    header.each_pair{|key, value| assert_equal(value, reply_header[key])}
+    verify_multiple_headers([header], format)
   end
 
   def verify_multiple_headers(headers, format)
     data = 'Some Test Data'
     message = WMQ::Message.new
     message.data = data
-    message.descriptor[:format] = WMQ::MQFMT_RF_HEADER_2
+    message.descriptor[:format] = format
     message.headers = headers
     #assert_equal(true,@queue_manager.put(:q_name=>@in_queue.name, :message=>message))
     assert_equal(true,@out_queue.put(:message=>message))
@@ -248,11 +231,11 @@ class TestTest < Test::Unit::TestCase
   
   def test_rf_header
     puts '****** test_rf_header ******'
-    # Note: Does not yet support empty names
     rfh = {:header_type =>:rf_header,
-           :name_value  => {' name   s' => '  v a l u e 1  ', 
+           :name_value  => {' name   s' => '  v a "l" u e 1  ', 
                             'n a m e 2 ' => 'v a l u e  2', 
-                            'name3'=>['value3', '', 'value 43']},
+                            '' => ['"', '""', '"""', '""""', ''],
+                            'name3'=>['"value3"', '', '"',' value 43"']},
           }
     verify_header(rfh, WMQ::MQFMT_RF_HEADER)
   end
@@ -308,8 +291,8 @@ class TestTest < Test::Unit::TestCase
     verify_multiple_headers(headers, WMQ::MQFMT_RF_HEADER_2)
   end
   
-  def in_progress_test_xmit_multiple_headers
-    puts '****** test_multiple_headers ******'
+  def test_xmit_multiple_headers
+    puts '****** test_xmit_q_header with ims header ******'
     headers = [{:header_type      => :xmit_q_header,
                 :remote_q_name    => 'SOME_REMOTE_QUEUE',
                 :remote_q_mgr_name=> 'SOME_REMOTE_Q_MGR',

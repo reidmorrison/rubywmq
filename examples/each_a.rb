@@ -19,8 +19,6 @@
 #          If no messages are on the queue, the program
 #          completes without waiting
 #
-#          Calls MQGET
-#
 require 'wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
