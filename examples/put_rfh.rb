@@ -58,7 +58,7 @@ WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
                       'name3' => ['value 3a', 'value 3b']} 
      }]
     
-    message.descriptor[:format] = WMQ::MQFMT_RF_HEADER
+    message.descriptor[:format] = WMQ::MQFMT_STRING
     
     queue.put(:message=>message)
   end

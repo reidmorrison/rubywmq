@@ -34,7 +34,7 @@ WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
       :xml => '<hello>to the world</hello>'
      }]
     
-    message.descriptor[:format] = WMQ::MQFMT_RF_HEADER_2
+    message.descriptor[:format] = WMQ::MQFMT_STRING
     
     queue.put(:message=>message)
   end

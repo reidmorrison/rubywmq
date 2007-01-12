@@ -33,6 +33,7 @@ static ID ID_size;
 static ID ID_name_value;
 static ID ID_xml;
 static ID ID_gsub;
+static ID ID_header_type;
 
 void Message_id_init()
 {
@@ -45,6 +46,7 @@ void Message_id_init()
     ID_name_value      = rb_intern("name_value");
     ID_xml             = rb_intern("xml");
     ID_gsub            = rb_intern("gsub");
+    ID_header_type     = rb_intern("header_type");
 }
 
 void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace_level,
@@ -88,7 +90,13 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
         {
             PMQBYTE p_data = 0;
             MQLONG  data_offset = 0;
-            struct Message_build_header_arg arg;
+            struct  Message_build_header_arg arg;
+            VALUE   next_header;
+            VALUE   first_header;
+            VALUE   header_type;
+            VALUE   ind_val;
+            size_t  index;
+            ID      first_header_id;
 
             if(trace_level>2)
                 printf ("WMQ::Queue#put %ld Header(s) supplied\n", NUM2LONG(rb_funcall(headers, ID_size, 0)));
@@ -110,8 +118,46 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
             arg.data_length    = RSTRING(data)->len;
             arg.p_data_offset  = &data_offset;
             arg.trace_level    = trace_level;
+            arg.next_header_id = 0;
+            arg.data_format    = pmqmd->Format;
 
-            rb_iterate (rb_each, headers, Message_build_header, (VALUE)&arg);  /* For each hash in headers array */
+            if(trace_level>2)
+                printf ("WMQ::Queue#put Building %ld headers.\n", RARRAY(headers)->len);
+
+            for(index = 0; index < RARRAY(headers)->len; index++)
+            {
+                /*
+                 * Look at the next Header so that this header can set it's format
+                 * to that required for the next header.
+                 */
+                ind_val = LONG2FIX(index+1);
+                next_header = rb_ary_aref(1, &ind_val, headers);
+
+                if(NIL_P(next_header))
+                {
+                    arg.next_header_id = 0;
+                }
+                else
+                {
+                    header_type = rb_hash_aref(next_header, ID2SYM(ID_header_type));
+                    if (!NIL_P(header_type))
+                    {
+                        arg.next_header_id = rb_to_id(header_type);
+                    }
+                }
+
+                ind_val = LONG2FIX(index);
+                Message_build_header(rb_ary_aref(1, &ind_val, headers), &arg);
+            }
+
+            /* Obtain Format of first header and copy in MQMD.Format */
+            ind_val      = LONG2FIX(0);
+            first_header = rb_ary_aref(1, &ind_val, headers);
+            header_type  = rb_hash_aref(first_header, ID2SYM(ID_header_type));
+            if (!NIL_P(header_type))
+            {
+                Message_build_set_format(rb_to_id(header_type), pmqmd->Format);
+            }
 
             if(trace_level>2)
                 printf ("WMQ::Queue#put done building headers. Offset is now %ld\n", arg.p_data_offset);
@@ -340,6 +386,8 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
     VALUE   name_value = rb_hash_aref(hash, ID2SYM(ID_name_value));
     MQLONG  pad = 0;
 
+    MQRFH_DEF.CodedCharSetId = MQCCSI_INHERIT;
+
     if(parg->trace_level>2)
         printf ("WMQ::Message#build_rf_header Found rf_header\n");
 
@@ -374,6 +422,15 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
     memcpy(p_data, &MQRFH_DEF, sizeof(MQRFH));
     to_mqrfh(hash, (PMQRFH)p_data);
     ((PMQRFH)p_data)->StrucLength = sizeof(MQRFH) + name_value_len;
+    if(parg->next_header_id)
+    {
+        Message_build_set_format(parg->next_header_id, ((PMQRFH)p_data)->Format);
+    }
+    else
+    {
+        strncpy(((PMQRFH)p_data)->Format, parg->data_format, MQ_FORMAT_LENGTH);
+        printf("Setting Format:%s\n",((PMQRFH)p_data)->Format);
+    }
 
     *(parg->p_data_offset) += sizeof(MQRFH);
     p_data += sizeof(MQRFH);
@@ -394,9 +451,8 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
 static void Message_deblock_rf_header_each_pair(const char *p_name, const char *p_value, void* p_name_value_hash)
 {
     VALUE name_value_hash = (VALUE)p_name_value_hash;
-    //printf("[%s] = [%s]\n", name, value);
-    VALUE key   = rb_str_new2(p_name);
-    VALUE value = rb_str_new2(p_value);
+    VALUE key             = rb_str_new2(p_name);
+    VALUE value           = rb_str_new2(p_value);
 
     /*
      * If multiple values arrive for the same name (key) need to put values in an array
@@ -596,6 +652,14 @@ void Message_build_rf_header_2(VALUE hash, struct Message_build_header_arg* parg
     p_data = Message_autogrow_data_buffer(parg, sizeof(MQRFH2));
     memcpy(p_data, &MQRFH2_DEF, sizeof(MQRFH2));
     to_mqrfh(hash, (PMQRFH2)p_data);
+    if(parg->next_header_id)
+    {
+        Message_build_set_format(parg->next_header_id, ((PMQRFH2)p_data)->Format);
+    }
+    else
+    {
+        memcpy(((PMQRFH2)p_data)->Format, parg->data_format, MQ_FORMAT_LENGTH);
+    }
     *(parg->p_data_offset) += sizeof(MQRFH2);
 
     if (!NIL_P(xml))

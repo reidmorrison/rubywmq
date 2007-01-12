@@ -53,7 +53,7 @@
       {:file=>'cmqc.h', :struct=>'MQRMH', :header=>'ref_msg_header'},
 
       # Trigger Message
-      {:file=>'cmqc.h', :struct=>'MQTM', :header=>'trigger', :format=>'0'},
+      {:file=>'cmqc.h', :struct=>'MQTM', :header=>'trigger', :format=>false},
 
       # Trigger Message 2 (character format)
       {:file=>'cmqc.h', :struct=>'MQTMC2'},
@@ -62,7 +62,7 @@
       {:file=>'cmqc.h', :struct=>'MQWIH', :header=>'work_info_header'},
 
       # Transmission-queue header - Todo: Need to deal with MQMDE
-      {:file=>'cmqc.h', :struct=>'MQXQH', :header=>'xmit_q_header', :format=>'p_header->MsgDesc.Format'},
+      {:file=>'cmqc.h', :struct=>'MQXQH', :header=>'xmit_q_header', :format=>'MsgDesc.Format'},
     ]
     
     wmq_structs.each do |struct|
@@ -157,7 +157,8 @@ void <%=direction.downcase%>_<%=struct_name.downcase%>(VALUE hash, <%=struct_nam
           type = item[0]
           name = item[1]
           
-          next if @@field_ignore_list.include?(name)
+          next if @@field_ignore_list.include?(name) ||
+                  (name=='Format' && struct[:header])
           
           match = /(MQ\D+)/.match(type)
           type = "#{match[1]}S" if match[1] != type
@@ -191,9 +192,6 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
     VALUE   descriptor = rb_hash_new();
     MQLONG  size       = 0;
 
-    from_mqmd(descriptor, pmqmd);
-    rb_funcall(self, ID_descriptor_set, 1, descriptor);
-
     while (p_format)
     {
 <%
@@ -210,7 +208,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
                 
             if(memcmp(p_header->StrucId, <%=struct[:struct_id] || "#{struct[:struct].upcase}_STRUC_ID"%>, sizeof(p_header->StrucId)) != 0)
             {
-                p_format = 0;    /* Bad Message received, do not deblock headers */
+                break;    /* Bad Message received, do not deblock headers */
                 if(trace_level>1)
                     printf("WMQ::Message#deblock MQFMT_<%=struct[:header].upcase%> received, but message does not contain <%=struct[:struct].upcase%>\n");
             }
@@ -219,11 +217,9 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
                 from_<%=struct[:struct].downcase%>(hash, p_header);
                 rb_hash_aset(hash, ID2SYM(ID_header_type), ID2SYM(ID_<%=struct[:header]%>));
                 rb_ary_push(headers, hash);
-
-                p_format    = <%=struct[:format] || 'p_header->Format'%>;
                 size        = <%=if struct[:custom] then
                                    "Message_deblock_#{struct[:header]} (hash, p_data, data_length);\n"+
-                                   "                if (!size) { p_format = 0; }    /* Poison Message */"
+                                   "                if (!size) break; /* Poison Message */"
                                  elsif struct[:elements].include?(['MQLONG', 'StrucLength'])
                                    'p_header->StrucLength;'
                                  else
@@ -231,9 +227,13 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
                                  end %>
                 p_data      += size;
                 data_length -= size;
-                
-                if(trace_level>2)
-                    printf ("WMQ::Message#deblock header used:%ld bytes\n", size);
+                <%=if struct[:format] == nil
+                     'p_format    = p_header->Format'
+                   elsif struct[:format] == false
+                     'break'
+                   else
+                     "p_format    = p_header->#{struct[:format]}"
+                   end %>;
             }
         }
         else
@@ -241,12 +241,33 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
       end
     end # wmq_structs.each 
 %>        {
-            p_format = 0;
+            break;
         }
     }
-
+    /* Copy the last recognised header found to the Descriptor */
+    if(p_format && p_format != pmqmd->Format)
+    {
+        strncpy(pmqmd->Format, p_format, MQ_FORMAT_LENGTH);
+    }
+    
+    from_mqmd(descriptor, pmqmd);
+    rb_funcall(self, ID_descriptor_set, 1, descriptor);
     rb_funcall(self, ID_headers_set, 1, headers);
     rb_funcall(self, ID_data_set, 1, rb_str_new(p_data, data_length));
+}
+
+void Message_build_set_format(ID header_type, PMQBYTE p_format)
+{
+<%
+    wmq_structs.each do |struct|
+      if struct[:header]
+%>    if(header_type == ID_<%=struct[:header]%>) { memcpy(p_format, MQFMT_<%=struct[:header].upcase%>, MQ_FORMAT_LENGTH); return;}
+<%
+      end
+    end # wmq_structs.each 
+    
+%>
+    rb_raise(rb_eArgError, "Invalid/Unknown header_type supplied in WMQ::Message#headers array");
 }
 
 /* --------------------------------------------------------------------------
@@ -278,7 +299,16 @@ int Message_build_header (VALUE hash, struct Message_build_header_arg* parg)
 
             memcpy(p_data, &<%=struct[:struct]%>_DEF, sizeof(<%=struct[:struct]%>));
             to_<%=struct[:struct].downcase%>(hash, (P<%=struct[:struct]%>)p_data);
-
+<%          if struct[:format] != false%>
+            if(parg->next_header_id)
+            {
+                Message_build_set_format(parg->next_header_id, ((P<%=struct[:struct]%>)p_data)-><%=struct[:format] || 'Format'%>);
+            }
+            else
+            {
+                memcpy(((P<%=struct[:struct]%>)p_data)-><%=struct[:format] || 'Format'%>, parg->data_format, MQ_FORMAT_LENGTH);
+            }
+<%          end %>
             *(parg->p_data_offset) += sizeof(<%=struct[:struct]%>);
 
             if(parg->trace_level>2)

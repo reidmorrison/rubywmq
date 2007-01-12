@@ -116,12 +116,10 @@ module WMQ
         :header_type     =>:dead_letter_header,
         :reason          =>parms.delete(:reason),
         :dest_q_name     =>queue.name,
-        :dest_q_mgr_name =>qmgr.name,
-        :format          =>message.descriptor[:format]}
+        :dest_q_mgr_name =>qmgr.name}
 
-      message.descriptor[:format]=WMQ::MQFMT_DEAD_LETTER_HEADER
       message.headers.unshift(dlh)
-      parms[:q_name]='SYSTEM.DEAD.LETTER.QUEUE'
+      parms[:q_name]='SYSTEM.DEAD.LETTER.QUEUE'  #TODO Should be obtained from QMGR config
       return qmgr.put(parms)
     end
 
@@ -130,10 +128,24 @@ module WMQ
   # Message contains the message descriptor (MQMD), data
   # and any headers.
   #
+  # Note:
+  # * The format in the descriptor applies only to the format of the data portion,
+  #   not the format of any included headers
+  # * The message format can ONLY be supplied in the descriptor.
+  #   * I.e. It is the format of the data, Not the headers.
+  #   * On the wire formats are determined automatically by the :header_type key for 
+  #     each header
+  #   * Other WebSphere MQ interfaces require that the formats be "daisy-chained"
+  #     * I.e. The MQMD.Format is actually the format of the first header
+  #     * Ruby WMQ removes this tedious requirement and performs this
+  #       requirement automatically under the covers
+  #   * The format of any header should not be supplied in the descriptor or any header
+  #
   # Message has the following attributes:
   # * descriptor = {
   #                                                           # WebSphere MQ Equivalent
-  #     :format             => WMQ::MQFMT_STRING ...          # MQMD.Format
+  #     :format             => WMQ::MQFMT_STRING,             # MQMD.Format - Format of data only
+  #                            WMQ::MQFMT_NONE                #   Do not supply header formats here
   #     :original_length    => Number                         # MQMD.OriginalLength
   #     :priority           => 0 .. 9                         # MQMD.Priority
   #     :put_time           => String                         # MQMD.PutTime
@@ -163,6 +175,8 @@ module WMQ
   #   }
   # * data => String
   # * headers => Array of Hashes
+  #   * Note: Do not supply the format of any header. Ruby WMQ does this for you.
+  #   
   #    The following headers are supported:
   #   * Rules And Formatting Header (RFH)
   #       :header_type => :rf_header

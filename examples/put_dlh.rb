@@ -32,7 +32,7 @@ WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
       :dest_q_mgr_name =>'BAD_Q_MGR'}
     ]
     
-    message.descriptor[:format] = WMQ::MQFMT_DEAD_LETTER_HEADER
+    message.descriptor[:format] = WMQ::MQFMT_STRING
     
     queue.put(:message=>message)
   end
