@@ -64,6 +64,8 @@ VALUE Queue_comp_code(VALUE self);
 VALUE Queue_reason(VALUE self);
 VALUE Queue_open_q(VALUE self);
 
+void Queue_extract_put_message_options(VALUE hash, PMQPMO ppmo);
+
 extern VALUE wmq_queue;
 extern VALUE wmq_queue_manager;
 extern VALUE wmq_message;
@@ -101,25 +103,61 @@ extern VALUE wmq_exception;
   #endif
     PMQBYTE  p_buffer;                /* message buffer                */
     MQLONG   buffer_size;             /* Allocated size of buffer      */
+
+    MQLONG   is_client_conn;          /* Is this a Client Connection?  */
+    void*    mq_lib_handle;           /* Handle to MQ library          */
+
+    void(*MQCONNX)(PMQCHAR,PMQCNO,PMQHCONN,PMQLONG,PMQLONG);
+    void(*MQCONN) (PMQCHAR,PMQHCONN,PMQLONG,PMQLONG);
+    void(*MQDISC) (PMQHCONN,PMQLONG,PMQLONG);
+    void(*MQBEGIN)(MQHCONN,PMQVOID,PMQLONG,PMQLONG);
+    void(*MQBACK) (MQHCONN,PMQLONG,PMQLONG);
+    void(*MQCMIT) (MQHCONN,PMQLONG,PMQLONG);
+    void(*MQPUT1) (MQHCONN,PMQVOID,PMQVOID,PMQVOID,MQLONG,PMQVOID,PMQLONG,PMQLONG);
+
+    void(*MQOPEN) (MQHCONN,PMQVOID,MQLONG,PMQHOBJ,PMQLONG,PMQLONG);
+    void(*MQCLOSE)(MQHCONN,PMQHOBJ,MQLONG,PMQLONG,PMQLONG);
+    void(*MQGET)  (MQHCONN,MQHOBJ,PMQVOID,PMQVOID,MQLONG,PMQVOID,PMQLONG,PMQLONG,PMQLONG);
+    void(*MQPUT)  (MQHCONN,MQHOBJ,PMQVOID,PMQVOID,MQLONG,PMQVOID,PMQLONG,PMQLONG);
+
+    void(*MQINQ)  (MQHCONN,MQHOBJ,MQLONG,PMQLONG,MQLONG,PMQLONG,MQLONG,PMQCHAR,PMQLONG,PMQLONG);
+    void(*MQSET)  (MQHCONN,MQHOBJ,MQLONG,PMQLONG,MQLONG,PMQLONG,MQLONG,PMQCHAR,PMQLONG,PMQLONG);
+
+    void(*mqCreateBag)(MQLONG,PMQHBAG,PMQLONG,PMQLONG);
+    void(*mqDeleteBag)(PMQHBAG,PMQLONG,PMQLONG);
+    void(*mqClearBag)(MQHBAG,PMQLONG,PMQLONG);
+    void(*mqExecute)(MQHCONN,MQLONG,MQHBAG,MQHBAG,MQHBAG,MQHOBJ,MQHOBJ,PMQLONG,PMQLONG);
+    void(*mqCountItems)(MQHBAG,MQLONG,PMQLONG,PMQLONG,PMQLONG);
+    void(*mqInquireBag)(MQHBAG,MQLONG,MQLONG,PMQHBAG,PMQLONG,PMQLONG);
+    void(*mqInquireItemInfo)(MQHBAG,MQLONG,MQLONG,PMQLONG,PMQLONG,PMQLONG,PMQLONG);
+    void(*mqInquireInteger)(MQHBAG,MQLONG,MQLONG,PMQLONG,PMQLONG,PMQLONG);
+    void(*mqInquireString)(MQHBAG,MQLONG,MQLONG,MQLONG,PMQCHAR,PMQLONG,PMQLONG,PMQLONG,PMQLONG);
+    void(*mqAddInquiry)(MQHBAG,MQLONG,PMQLONG,PMQLONG);
+    void(*mqAddInteger)(MQHBAG,MQLONG,MQLONG,PMQLONG,PMQLONG);
+    void(*mqAddString)(MQHBAG,MQLONG,MQLONG,PMQCHAR,PMQLONG,PMQLONG);
  };
+
+void Queue_manager_mq_load(PQUEUE_MANAGER pqm);
+void Queue_manager_mq_free(PQUEUE_MANAGER pqm);
+
 
 /*
  * Message
  */
-void  Message_id_init();
-VALUE Message_initialize(int argc, VALUE *argv, VALUE self);
-VALUE Message_clear(VALUE self);
+void    Message_id_init();
+VALUE   Message_initialize(int argc, VALUE *argv, VALUE self);
+VALUE   Message_clear(VALUE self);
 PMQBYTE Message_autogrow_data_buffer(struct Message_build_header_arg* parg, MQLONG additional_size);
 void    Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg);
 MQLONG  Message_deblock_rf_header (VALUE hash, PMQBYTE p_data, MQLONG data_len);
 void    Message_build_rf_header_2 (VALUE hash, struct Message_build_header_arg* parg);
 MQLONG  Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_data, MQLONG data_len);
 
-void Message_build_set_format(ID header_type, PMQBYTE p_format);
-void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace_level,
-                   VALUE parms, PPMQVOID pp_buffer, PMQLONG p_total_length, PMQMD pmqmd);
-void Message_build_mqmd(VALUE self, PMQMD pmqmd);
-void Message_deblock(VALUE message, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_length, MQLONG trace_level);
+void    Message_build_set_format(ID header_type, PMQBYTE p_format);
+void    Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace_level,
+                      VALUE parms, PPMQVOID pp_buffer, PMQLONG p_total_length, PMQMD pmqmd);
+void    Message_build_mqmd(VALUE self, PMQMD pmqmd);
+void    Message_deblock(VALUE message, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_length, MQLONG trace_level);
 
 struct Message_build_header_arg {
     PMQBYTE* pp_buffer;                               /* Autosize: Pointer to start of total buffer */

@@ -20,24 +20,19 @@
 #
 require 'find'
 require 'yaml'
+require 'wmq'
 
 # Call program passing environment name as first parameter
 #   The environment corresponds to an entry in the config file
 #   Defaults to dev
 env = ARGV[0] || raise("Command line argument 'environment' is required")
 config = YAML::load_file('files_to_q.cfg')[env]
-qmgr_options = config['qmgr_options']
-if qmgr_options[:connection_name]
-  require 'wmq/wmq_client'   # Force Client Connection (library)
-else
-  require 'wmq'
-end
 
 message = WMQ::Message.new
 message.descriptor = config['descriptor'] || {}
 tstart = Time.now
 counter = 0
-WMQ::QueueManager.connect(qmgr_options) do |qmgr|
+WMQ::QueueManager.connect(config['qmgr_options']) do |qmgr|
   qmgr.open_queue({:mode=>:output}.merge(config['output_queue'])) do |queue|
     Find.find(config['source_directory']) do |path|
       unless FileTest.directory?(path)

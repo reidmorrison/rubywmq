@@ -105,6 +105,10 @@ void Queue_id_init()
     MQCHAR   q_name[MQ_Q_NAME_LENGTH+1]; /* queue name plus null character */
     PMQBYTE  p_buffer;                /* message buffer                */
     MQLONG   buffer_size;             /* Allocated size of buffer      */
+
+    void(*MQCLOSE)(MQHCONN,PMQHOBJ,MQLONG,PMQLONG,PMQLONG);
+    void(*MQGET)  (MQHCONN,MQHOBJ,PMQVOID,PMQVOID,MQLONG,PMQVOID,PMQLONG,PMQLONG,PMQLONG);
+    void(*MQPUT)  (MQHCONN,MQHOBJ,PMQVOID,PMQVOID,MQLONG,PMQVOID,PMQLONG,PMQLONG);
  };
 
 /* --------------------------------------------------
@@ -119,7 +123,7 @@ void QUEUE_free(void* p)
     if (pq->hobj)  /* Valid Q handle means MQCLOSE was not called */
     {
         printf("WMQ::Queue#close was not called. Automatically calling close()\n");
-        MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
+        pq->MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
     }
     free(pq->p_buffer);
     free(p);
@@ -187,7 +191,7 @@ static MQLONG Queue_extract_open_options(VALUE hash, VALUE name)
     return mq_open_options;
 }
 
-static void Queue_extract_put_message_options(VALUE hash, PMQPMO ppmo)
+void Queue_extract_put_message_options(VALUE hash, PMQPMO ppmo)
 {
     VALUE    val;
     MQLONG   flag;
@@ -428,6 +432,9 @@ VALUE Queue_open(VALUE self)
         rb_raise(rb_eRuntimeError, "Fatal: Queue Manager object not found in Queue instance");
     }
     Data_Get_Struct(queue_manager, QUEUE_MANAGER, pqm);
+    pq->MQCLOSE= pqm->MQCLOSE;
+    pq->MQGET  = pqm->MQGET;
+    pq->MQPUT  = pqm->MQPUT;
 
     pq->hcon = pqm->hcon;                             /* Store Queue Manager handle for subsequent calls */
 
@@ -439,10 +446,10 @@ VALUE Queue_open(VALUE self)
         if(pq->trace_level)
             printf ("WMQ::Queue#open() Queue:%s Already open, closing it!\n", RSTRING(name)->ptr);
 
-        MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
+        pqm->MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
     }
 
-    MQOPEN(pq->hcon, &od, pq->open_options, &pq->hobj, &pq->comp_code, &pq->reason_code);
+    pqm->MQOPEN(pq->hcon, &od, pq->open_options, &pq->hobj, &pq->comp_code, &pq->reason_code);
 
     /* --------------------------------------------------
      * If the Dynamic Queue already exists, just open the
@@ -459,7 +466,7 @@ VALUE Queue_open(VALUE self)
             printf("WMQ::Queue#open() Queue already exists, re-trying with queue name:%s\n",
                    RSTRING(dynamic_q_name)->ptr);
 
-        MQOPEN(pq->hcon, &od, pq->open_options, &pq->hobj, &pq->comp_code, &pq->reason_code);
+        pqm->MQOPEN(pq->hcon, &od, pq->open_options, &pq->hobj, &pq->comp_code, &pq->reason_code);
     }
 
     if(pq->trace_level)
@@ -534,7 +541,7 @@ VALUE Queue_close(VALUE self)
 
     if(pq->trace_level) printf ("WMQ::Queue#close() Queue Handle:%ld, Queue Manager Handle:%ld\n", pq->hobj, pq->hcon);
 
-    MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
+    pq->MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
 
     pq->hcon = 0; /* Every time the queue is opened, the qmgr handle must be fetched again! */
     pq->hobj = 0;
@@ -754,7 +761,8 @@ VALUE Queue_get(VALUE self, VALUE hash)
      */
     do
     {
-        MQGET(pq->hcon,            /* connection handle                 */
+        pq->MQGET(
+              pq->hcon,            /* connection handle                 */
               pq->hobj,            /* object handle                     */
               &md,                 /* message descriptor                */
               &gmo,                /* get message options               */
@@ -961,7 +969,8 @@ VALUE Queue_put(VALUE self, VALUE hash)
 
     if(pq->trace_level) printf("WMQ::Queue#put() Queue Handle:%ld, Queue Manager Handle:%ld\n", pq->hobj, pq->hcon);
 
-    MQPUT(pq->hcon,            /* connection handle               */
+    pq->MQPUT(
+          pq->hcon,            /* connection handle               */
           pq->hobj,            /* object handle                   */
           &md,                 /* message descriptor              */
           &pmo,                /* put message options             */
@@ -982,224 +991,6 @@ VALUE Queue_put(VALUE self, VALUE hash)
                      "WMQ::Queue#put(). Error writing a message to Queue:%s, reason:%s",
                      RSTRING(name)->ptr,
                      wmq_reason(pq->reason_code));
-        }
-        return Qfalse;
-    }
-    else
-    {
-        VALUE message = rb_hash_aref(hash, ID2SYM(ID_message));
-        if(!NIL_P(message))
-        {
-            VALUE descriptor = rb_funcall(message, ID_descriptor, 0);
-            from_mqmd(descriptor, &md);                   /* This should be optimized to output only fields */
-        }
-    }
-
-    return Qtrue;
-}
-
-/*
- * call-seq:
- *   put(parameters)
- *
- * Put a message to the queue without having to first open the queue
- * Recommended for reply queues that change frequently
- *
- * * parameters: a Hash consisting of one or more of the following parameters
- *
- * Summary of parameters and their WebSphere MQ equivalents
- *  queue.get(                                             # WebSphere MQ Equivalents:
- *   :q_name             => 'Queue Name',                  # MQOD.ObjectName
- *   :q_name             => { queue_manager=>'QMGR_name',  # MQOD.ObjectQMgrName
- *                            q_name       =>'q_name'}
- *   :message            => my_message,                    # n/a : Instance of Message
- *   :data               => "Hello World",                 # n/a : Data to send
- *   :sync               => false,                         # MQGMO_SYNCPOINT
- *   :new_id             => true,                          # MQPMO_NEW_MSG_ID & MQPMO_NEW_CORREL_ID
- *   :new_msg_id         => true,                          # MQPMO_NEW_MSG_ID
- *   :new_correl_id      => true,                          # MQPMO_NEW_CORREL_ID
- *   :fail_if_quiescing  => true,                          # MQOO_FAIL_IF_QUIESCING
- *   :options            => WMQ::MQPMO_FAIL_IF_QUIESCING   # MQPMO_*
- *   )
- *
- * Mandatory Parameters
- * * :q_name => String
- *   * Name of the existing WebSphere MQ local queue, model queue or remote queue to open
- *   * To open remote queues for which a local remote queue definition is not available
- *     pass a Hash as q_name (see q_name => Hash)
- *       OR
- * * :q_name => Hash
- *   * q_name => String
- *     * Name of the existing WebSphere MQ local queue, model queue or remote queue to open
- *   * :q_mgr_name => String
- *     * Name of the remote WebSphere MQ queue manager to send the message to.
- *     * This allows a message to be written to a queue on a remote queue manager
- *       where a remote queue definition is not defined locally
- *     * Commonly used to reply to messages from remote systems
- *     * If q_mgr_name is the same as the local queue manager name then the message
- *       is merely written to the local queue.
- *     * Note: q_mgr_name should only be supplied when putting messages to the queue.
- *         It is not possible to get messages from a queue on a queue manager other
- *         than the currently connected queue manager
- *
- * * Either :message or :data must be supplied
- *   * If both are supplied, then :data will be written to the queue. The data in :message
- *     will be ignored
- *
- * Optional Parameters
- * * :data => String
- *   * Data to be written to the queue. Can be binary or text data
- *
- * * :message => Message
- *   * An instance of the WMQ::Message
- *   * The Message descriptor, headers and data is retrieved from :message
- *     * message.data is ignored if :data is supplied
- *
- * * :sync => true or false
- *   * Determines whether the get is performed under synchpoint.
- *     I.e. Under the current unit of work
- *      Default: false
- *
- * * :new_id => true or false
- *   * Generate a new message id and correlation id for this
- *     message. :new_msg_id and :new_correl_id will be ignored
- *     if this parameter is true
- *      Default: false
- *
- * * :new_msg_id => true or false
- *   * Generate a new message id for this message
- *   * Note: A blank message id will result in a new message id anyway.
- *     However, for subsequent puts using the same message descriptor, the same
- *     message id will be used.
- *      Default: false
- *
- * * :new_correl_id => true or false
- *   * Generate a new correlation id for this message
- *      Default: false
- *
- * * :fail_if_quiescing => true or false
- *   * Determines whether the WMQ::Queue#put call will fail if the queue manager is
- *     in the process of being quiesced.
- *   * Note: This interface differs from other WebSphere MQ interfaces,
- *     they do not default to true.
- *      Default: true
- *      Equivalent to: MQGMO_FAIL_IF_QUIESCING
- *
- *   * Note: As part of the application design, carefull consideration
- *     should be given as to when to allow a transaction or
- *     unit of work to complete or fail under this condition.
- *     As such it is important to include this option where
- *     appropriate so that MQ Administrators can shutdown the
- *     queue managers without having to resort to the 'immediate'
- *     shutdown option.
- *
- * * :options => Fixnum (Advanced MQ Use only)
- *   * Numeric field containing any of the MQ Put message options or'd together
- *     * E.g. :options => WMQ::MQPMO_PASS_IDENTITY_CONTEXT | WMQ::MQPMO_ALTERNATE_USER_AUTHORITY
- *   * Note: If :options is supplied, it is applied first, then the above parameters are
- *     applied afterwards.
- *   * One or more of the following values:
- *       WMQ::MQPMO_NO_SYNCPOINT
- *       WMQ::MQPMO_LOGICAL_ORDER
- *       WMQ::MQPMO_NO_CONTEXT
- *       WMQ::MQPMO_DEFAULT_CONTEXT
- *       WMQ::MQPMO_PASS_IDENTITY_CONTEXT
- *       WMQ::MQPMO_PASS_ALL_CONTEXT
- *       WMQ::MQPMO_SET_IDENTITY_CONTEXT
- *       WMQ::MQPMO_SET_ALL_CONTEXT
- *       WMQ::MQPMO_ALTERNATE_USER_AUTHORITY
- *       WMQ::MQPMO_RESOLVE_LOCAL_Q
- *       WMQ::MQPMO_NONE
- *   * Please see the WebSphere MQ documentation for more details on the above options
- *      Default: WMQ::MQPMO_NONE
- *
- * Returns:
- * * true : On Success
- * * false: On Failure
- *
- *   comp_code and reason_code are also updated.
- *   reason will return a text description of the reason_code
- *
- * Throws:
- * * WMQ::WMQException if comp_code == MQCC_FAILED
- * * Except if :exception_on_error => false was supplied as a parameter
- *   to QueueManager.new
- */
-VALUE QueueManager_put(VALUE self, VALUE hash)
-{
-    MQLONG   BufferLength;           /* Length of the message in Buffer */
-    PMQVOID  pBuffer;                /* Message data                  */
-    /*-----------------10/22/2006 7:11PM----------------
-     * TODO: Need dynamic buffer here!
-     * --------------------------------------------------*/
-    MQBYTE   header_buffer[65535];   /* message buffer for header use */
-    MQMD     md = {MQMD_DEFAULT};    /* Message Descriptor            */
-    MQPMO    pmo = {MQPMO_DEFAULT};  /* put message options           */
-    MQOD     od = {MQOD_DEFAULT};    /* Object Descriptor             */
-    VALUE    q_name;
-    VALUE    str;
-    size_t   size;
-    size_t   length;
-    VALUE    val;
-
-    PQUEUE_MANAGER pqm;
-    Data_Get_Struct(self, QUEUE_MANAGER, pqm);
-
-    Check_Type(hash, T_HASH);
-
-    q_name = rb_hash_aref(hash, ID2SYM(ID_q_name));
-
-    if (NIL_P(q_name))
-    {
-        rb_raise(rb_eArgError,
-                 "Mandatory parameter :q_name is missing from WMQ::QueueManager::put1()");
-    }
-
-    /* --------------------------------------------------
-     * If :q_name is a hash, extract :q_name and :q_mgr_name
-     * --------------------------------------------------*/
-    if(TYPE(q_name) == T_HASH)
-    {
-        WMQ_HASH2MQCHARS(q_name, q_mgr_name, od.ObjectQMgrName)
-
-        q_name = rb_hash_aref(val, ID2SYM(ID_q_name));
-        if (NIL_P(q_name))
-        {
-            rb_raise(rb_eArgError,
-                     "Mandatory parameter :q_name missing from :q_name hash passed to WMQ::QueueManager#put");
-        }
-    }
-
-    WMQ_STR2MQCHARS(q_name,od.ObjectName)
-
-    Queue_extract_put_message_options(hash, &pmo);
-    Message_build(&pqm->p_buffer, &pqm->buffer_size, pqm->trace_level,
-                  hash, &pBuffer, &BufferLength,    &md);
-
-    if(pqm->trace_level) printf("WMQ::QueueManager#put Queue Manager Handle:%ld\n", pqm->hcon);
-
-    MQPUT1(pqm->hcon,           /* connection handle               */
-           &od,                 /* object descriptor               */
-           &md,                 /* message descriptor              */
-           &pmo,                /* put message options             */
-           BufferLength,        /* message length                  */
-           pBuffer,             /* message buffer                  */
-           &pqm->comp_code,     /* completion code                 */
-           &pqm->reason_code);  /* reason code                     */
-
-    if(pqm->trace_level) printf("WMQ::QueueManager#put MQPUT1 ended with reason:%s\n", wmq_reason(pqm->reason_code));
-
-    if (pqm->reason_code != MQRC_NONE)
-    {
-        if (pqm->exception_on_error)
-        {
-            VALUE qmgr_name = QueueManager_name(self);
-
-            rb_raise(wmq_exception,
-                     "WMQ::QueueManager.put(). Error writing a message to Queue:%s on Queue Manager:%s reason:%s",
-                     RSTRING(q_name)->ptr,
-                     RSTRING(qmgr_name)->ptr,
-                     wmq_reason(pqm->reason_code));
         }
         return Qfalse;
     }

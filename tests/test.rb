@@ -1,8 +1,7 @@
 # Shift include path to use locally built copy of rubwmq
 $:.unshift '../ext'
 
-require 'wmq'                  # Use Local MQ Server Connection
-#require 'wmq/wmq_client'      # Use MQ Client Connection
+require 'wmq'
 require 'wmq/wmq_const_admin'
 require 'test/unit'
 class TestTest < Test::Unit::TestCase

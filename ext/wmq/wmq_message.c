@@ -429,7 +429,6 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
     else
     {
         strncpy(((PMQRFH)p_data)->Format, parg->data_format, MQ_FORMAT_LENGTH);
-        printf("Setting Format:%s\n",((PMQRFH)p_data)->Format);
     }
 
     *(parg->p_data_offset) += sizeof(MQRFH);

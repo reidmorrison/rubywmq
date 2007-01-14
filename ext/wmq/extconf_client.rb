@@ -14,29 +14,27 @@
 #  limitations under the License.
 ################################################################################
 
+#
+# NOTE:  Do NOT use this file unless the platform being requested is not supported
+#        directly by Ruby WMQ. Ruby WMQ already supports automatic dynamic loading on
+#        Windows, Solaris and Linux
+#
 require 'mkmf'
 require '../../generate/generate_reason'
 require '../../generate/generate_const'
 require '../../generate/generate_structs'
 
 include_path = ''
-if RUBY_PLATFORM =~ /mswin32/
-  # Since mkmf does not support lib paths that contain spaces:
-  system 'copy "C:\Program Files\IBM\WebSphere MQ\Tools\lib\mqic32.lib"'
-
-  include_path = 'C:\Program Files\IBM\WebSphere MQ\Tools\c\include'
-  dir_config('mqm', include_path, '.')
-  have_library('mqic32')
-else
+unless (RUBY_PLATFORM =~ /win/i) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)
   include_path = '/opt/mqm/inc'
   dir_config('mqm', include_path, '/opt/mqm/lib')
   have_library('mqic')
+  
+  # Generate Source Files # Could check if not already present
+  GenerateReason.generate(include_path+'/')
+  GenerateConst.generate(include_path+'/')
+  GenerateStructs.new(include_path+'/', '../../generate').generate
+  
+  have_header('cmqc.h')
+  create_makefile('wmq_client')
 end
-
-# Generate Source Files # Could check if not already present
-GenerateReason.generate(include_path+'/')
-GenerateConst.generate(include_path+'/')
-GenerateStructs.new(include_path+'/', '../../generate').generate
-
-have_header('cmqc.h')
-create_makefile('wmq_client')

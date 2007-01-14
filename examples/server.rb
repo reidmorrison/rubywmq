@@ -50,6 +50,17 @@
 #     - If the reply fails, it must be put to the dead letter queue
 #       with the relevant dead letter header and reason
 #     
+#     Note: - It is not recommended to run server side MQ applications over a client
+#             connection.
+#           - Client connections require substantially more error handling.
+#             - E.g. Connection to queue manager can be lost due to netowk issues
+#               - Need to go into some sort of retry state attempting
+#                 to reconnect to the queue manager
+#               - What about any work that was in progress?
+#               - Need to re-open any queues
+#               - Do any changes to other resources need to be undone first?
+#                 - E.g. Database, File etc..
+#             - etc....
 #
 require 'wmq'
 
@@ -66,15 +77,14 @@ WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
                             :sync=>true)
         
       rescue WMQ::WMQException => exc
-        # Sending this message to the Dead Letter Queue
-        #   Including a Dead Letter Header
-        #   Could also include a rf_header with a description of the problem
-        #     if :reason is insufficient
+        # Failed to send reply, put message to the Dead Letter Queue and add a dead letter header
         p exc
-        puts "Failed to reply to sender, try to put to dead letter queue"
+        puts "Failed to reply to sender, Put to dead letter queue"
         put_to_dead_letter_q(:message=>message, 
                              :reason=>WMQ::MQRC_UNKNOWN_REMOTE_Q_MGR,
                              :sync=>true)
+        # If it fails to put to the dead letter queue, this program will terminate and
+        # the changes will be "backed out". E.g. Queue Full, ...
       end
       qmgr.commit
     end

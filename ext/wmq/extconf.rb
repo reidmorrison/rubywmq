@@ -21,9 +21,6 @@ require '../../generate/generate_structs'
 
 include_path = ''
 if RUBY_PLATFORM =~ /mswin32/
-  # Since mkmf does not support lib paths that contain spaces:
-  system 'copy "C:\Program Files\IBM\WebSphere MQ\Tools\lib\mqm.lib"'
-
   include_path = 'C:\Program Files\IBM\WebSphere MQ\Tools\c\include'
   dir_config('mqm', include_path, '.')
 else
@@ -34,7 +31,9 @@ end
 have_header('cmqc.h')
 
 # Check for WebSphere MQ Server library
-have_library('mqm')
+unless (RUBY_PLATFORM =~ /win/i) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)
+  have_library('mqm')
+end
 
 # Generate Source Files
 GenerateReason.generate(include_path+'/')
@@ -42,4 +41,4 @@ GenerateConst.generate(include_path+'/')
 GenerateStructs.new(include_path+'/', '../../generate').generate
 
 # Generate Makefile
-create_makefile('wmq_server') #, 'wmq_client')
+create_makefile('wmq')

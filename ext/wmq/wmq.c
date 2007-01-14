@@ -21,7 +21,7 @@ VALUE wmq_queue_manager;
 VALUE wmq_message;
 VALUE wmq_exception;
 
-void Init_wmq_server() {
+void Init_wmq() {
     VALUE qmgr, wmq;
 
     wmq = rb_define_module("WMQ");
@@ -36,7 +36,7 @@ void Init_wmq_server() {
     rb_define_method(wmq_queue_manager, "begin", QueueManager_begin, 0);            /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "commit", QueueManager_commit, 0);          /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "backout", QueueManager_backout, 0);        /* in wmq_queue_manager.c */
-    rb_define_method(wmq_queue_manager, "put", QueueManager_put, 1);                /* in wmq_queue.c */
+    rb_define_method(wmq_queue_manager, "put", QueueManager_put, 1);                /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "comp_code", QueueManager_comp_code, 0);    /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "reason_code", QueueManager_reason_code, 0); /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "reason", QueueManager_reason, 0);          /* in wmq_queue_manager.c */
@@ -85,8 +85,8 @@ void Init_wmq_server() {
 }
 
 /*
- * For client build
+ * For client build when dynamic loading is not being used E.g. Not Windows or Solaris ...
  */
 void Init_wmq_client() {
-    Init_wmq_server();
+    Init_wmq();
 }

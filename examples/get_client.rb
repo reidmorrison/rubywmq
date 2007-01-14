@@ -18,13 +18,19 @@
 # Sample : get() : Retrieve a single message from a queue
 #          If no messages are on the queue, message.data is nil
 #
-# Force Client connection in case we have a queue manager locally
-require 'wmq/wmq_client'
+# The Client connection is determined by the :connection_name parameter supplied
+# to QueueManager::connect or QueueManager::new
+# 
+# If :connection_name is not present, a WebSphere MQ Server connection will be used
+# I.e. Local server connection
+# 
+require 'wmq'
 
 WMQ::QueueManager.connect(
-            :channel_name    => 'SYSTEM.DEF.SVRCONN',
-            :transport_type  => WMQ::MQXPT_TCP,
-            :connection_name => 'localhost(1414)' ) do |qmgr|
+            :connection_name => 'localhost(1414)',        # Use MQ Client Library
+            :channel_name    => 'SYSTEM.DEF.SVRCONN',     # Optional, since this is the default value
+            :transport_type  => WMQ::MQXPT_TCP            # Optional, since this is the default value
+       ) do |qmgr|
   qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:input) do |queue|
 
     message = WMQ::Message.new

@@ -25,10 +25,9 @@ static ID ID_connect_options;
 static ID ID_q_mgr_name;
 static ID ID_queue_manager;
 static ID ID_exception_on_error;
-static ID ID_channel_name;
-static ID ID_transport_type;
-static ID ID_max_msg_length;
-static ID ID_connection_name;
+static ID ID_descriptor;
+static ID ID_message;
+static ID ID_trace_level;
 
 /* MQCD ID's */
 static ID ID_channel_name;
@@ -52,7 +51,6 @@ static ID ID_ssl_cipher_spec;
 static ID ID_ssl_peer_name;
 static ID ID_keep_alive_interval;
 static ID ID_crypto_hardware;
-static ID ID_trace_level;
 
 /* MQSCO ID's */
 static ID ID_key_repository;
@@ -73,6 +71,8 @@ void QueueManager_id_init(void)
     ID_exception_on_error   = rb_intern("exception_on_error");
     ID_connect_options      = rb_intern("connect_options");
     ID_trace_level          = rb_intern("trace_level");
+    ID_descriptor           = rb_intern("descriptor");
+    ID_message              = rb_intern("message");
 
     /* MQCD ID's */
     ID_channel_name         = rb_intern("channel_name");
@@ -114,14 +114,14 @@ void QUEUE_MANAGER_free(void* p)
 {
     PQUEUE_MANAGER pqm = (PQUEUE_MANAGER)p;
 
-    if(pqm->trace_level) printf("WMQ::QueueManager Freeing QUEUE_MANAGER structure\n");
+    if(pqm->trace_level>1) printf("WMQ::QueueManager Freeing QUEUE_MANAGER structure\n");
 
     if (pqm->hcon && !pqm->already_connected)  /* Valid MQ handle means MQDISC was not called */
     {
         printf("WMQ::QueueManager#free disconnect() was not called for Queue Manager instance!!\n");
         printf("WMQ::QueueManager#free Automatically calling back() and disconnect()\n");
-        MQBACK(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
-        MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
+        pqm->MQBACK(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
+        pqm->MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
     }
   #ifdef MQCD_VERSION_6
     free(pqm->long_remote_user_id_ptr);
@@ -132,14 +132,15 @@ void QUEUE_MANAGER_free(void* p)
   #ifdef MQHB_UNUSABLE_HBAG
     if (pqm->admin_bag != MQHB_UNUSABLE_HBAG)
     {
-        mqDeleteBag(&pqm->admin_bag, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqDeleteBag(&pqm->admin_bag, &pqm->comp_code, &pqm->reason_code);
     }
 
     if (pqm->reply_bag != MQHB_UNUSABLE_HBAG)
     {
-        mqDeleteBag(&pqm->reply_bag, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqDeleteBag(&pqm->reply_bag, &pqm->comp_code, &pqm->reason_code);
     }
   #endif
+    Queue_manager_mq_free(pqm);
     free(pqm->p_buffer);
     free(p);
 }
@@ -186,6 +187,9 @@ VALUE QUEUE_MANAGER_alloc(VALUE klass)
     pqm->buffer_size = 0;
     pqm->p_buffer    = 0;
 
+    pqm->is_client_conn = 0;
+    pqm->mq_lib_handle  = 0;
+
     return Data_Wrap_Struct(klass, 0, QUEUE_MANAGER_free, pqm);
 }
 
@@ -215,9 +219,6 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
     size_t         length;
     size_t         i;
     PQUEUE_MANAGER pqm;
-  #ifdef MQCNO_VERSION_2
-    PMQCD          pmqcd;
-  #endif
     char*          pChar;
 
     Check_Type(hash, T_HASH);
@@ -241,123 +242,135 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
 
     WMQ_HASH2BOOL(hash,exception_on_error, pqm->exception_on_error)
 
+    /*
+     * All Client connection parameters are ignored if connection_name is missing
+     */
 #ifdef MQCNO_VERSION_2
-    /* Process MQCD */
-    pmqcd = &pqm->client_conn;
-
-    WMQ_HASH2MQCHARS(hash,connection_name,             pmqcd->ConnectionName)
-    WMQ_HASH2MQLONG (hash,transport_type,              pmqcd->TransportType)
-    WMQ_HASH2MQCHARS(hash,mode_name,                   pmqcd->ModeName)
-    WMQ_HASH2MQCHARS(hash,tp_name,                     pmqcd->TpName)
-    WMQ_HASH2MQCHARS(hash,security_exit,               pmqcd->SecurityExit)
-    WMQ_HASH2MQCHARS(hash,send_exit,                   pmqcd->SendExit)
-    WMQ_HASH2MQCHARS(hash,receive_exit,                pmqcd->ReceiveExit)
-    WMQ_HASH2MQLONG (hash,max_msg_length,              pmqcd->MaxMsgLength)
-    WMQ_HASH2MQCHARS(hash,security_user_data,          pmqcd->SecurityUserData)
-    WMQ_HASH2MQCHARS(hash,send_user_data,              pmqcd->SendUserData)
-    WMQ_HASH2MQCHARS(hash,receive_user_data,           pmqcd->ReceiveUserData)
-    WMQ_HASH2MQCHARS(hash,user_identifier,             pmqcd->UserIdentifier)
-    WMQ_HASH2MQCHARS(hash,password,                    pmqcd->Password)
-
-    /* Default channel name to system default */
-    val = rb_hash_aref(hash, ID2SYM(ID_channel_name));
-    if (NIL_P(val))
+    if(!NIL_P(rb_hash_aref(hash, ID2SYM(ID_connection_name))))
     {
-        strncpy(pmqcd->ChannelName, "SYSTEM.DEF.SVRCONN", sizeof(pmqcd->ChannelName));
+        PMQCD pmqcd = &pqm->client_conn;              /* Process MQCD */
+        pqm->is_client_conn = 1;                      /* Set to Client connection */
+
+        WMQ_HASH2MQCHARS(hash,connection_name,             pmqcd->ConnectionName)
+        WMQ_HASH2MQLONG (hash,transport_type,              pmqcd->TransportType)
+        WMQ_HASH2MQCHARS(hash,mode_name,                   pmqcd->ModeName)
+        WMQ_HASH2MQCHARS(hash,tp_name,                     pmqcd->TpName)
+        WMQ_HASH2MQCHARS(hash,security_exit,               pmqcd->SecurityExit)
+        WMQ_HASH2MQCHARS(hash,send_exit,                   pmqcd->SendExit)
+        WMQ_HASH2MQCHARS(hash,receive_exit,                pmqcd->ReceiveExit)
+        WMQ_HASH2MQLONG (hash,max_msg_length,              pmqcd->MaxMsgLength)
+        WMQ_HASH2MQCHARS(hash,security_user_data,          pmqcd->SecurityUserData)
+        WMQ_HASH2MQCHARS(hash,send_user_data,              pmqcd->SendUserData)
+        WMQ_HASH2MQCHARS(hash,receive_user_data,           pmqcd->ReceiveUserData)
+        WMQ_HASH2MQCHARS(hash,user_identifier,             pmqcd->UserIdentifier)
+        WMQ_HASH2MQCHARS(hash,password,                    pmqcd->Password)
+
+        /* Default channel name to system default */
+        val = rb_hash_aref(hash, ID2SYM(ID_channel_name));
+        if (NIL_P(val))
+        {
+            strncpy(pmqcd->ChannelName, "SYSTEM.DEF.SVRCONN", sizeof(pmqcd->ChannelName));
+        }
+        else
+        {
+            WMQ_HASH2MQCHARS(hash,channel_name,            pmqcd->ChannelName)
+        }
+
+    #ifdef MQCD_VERSION_4
+        WMQ_HASH2MQLONG(hash,heartbeat_interval,          pmqcd->HeartbeatInterval)
+        /* TODO:
+        WMQ_HASH2MQLONG(hash,exit_name_length,            pmqcd->ExitNameLength)
+        WMQ_HASH2MQLONG(hash,exit_data_length,            pmqcd->ExitDataLength)
+        WMQ_HASH2MQLONG(hash,send_exits_defined,          pmqcd->SendExitsDefined)
+        WMQ_HASH2MQLONG(hash,receive_exits_defined,       pmqcd->ReceiveExitsDefined)
+        TO_PTR (send_exit_ptr,               pmqcd->SendExitPtr)
+        TO_PTR (send_user_data_ptr,          pmqcd->SendUserDataPtr)
+        TO_PTR (receive_exit_ptr,            pmqcd->ReceiveExitPtr)
+        TO_PTR (receive_user_data_ptr,       pmqcd->ReceiveUserDataPtr)
+        */
+    #endif
+    #ifdef MQCD_VERSION_6
+        val = rb_hash_aref(hash, ID2SYM(ID_long_remote_user_id));
+        if (!NIL_P(val))
+        {
+            str = StringValue(val);
+            length = RSTRING(str)->len;
+
+            if (length > 0)
+            {
+                MQPTR pBuffer;
+                if(pqm->trace_level > 1)
+                    printf("WMQ::QueueManager#initialize() Setting long_remote_user_id:%s\n",
+                        RSTRING(str)->ptr);
+
+                /* Include null at end of string */
+                pBuffer = ALLOC_N(char, length+1);
+                memcpy(pBuffer, RSTRING(str)->ptr, length+1);
+
+                pmqcd->LongRemoteUserIdLength = length;
+                pmqcd->LongRemoteUserIdPtr    = pBuffer;
+                pqm->long_remote_user_id_ptr  = pBuffer;
+            }
+        }
+        WMQ_HASH2MQBYTES(hash,remote_security_id,          pmqcd->RemoteSecurityId)
+        WMQ_HASH2MQCHARS(hash,ssl_cipher_spec,             pmqcd->SSLCipherSpec)
+    #endif
+    #ifdef MQCD_VERSION_7
+        val = rb_hash_aref(hash, ID2SYM(ID_ssl_peer_name));
+        if (!NIL_P(val))
+        {
+            str = StringValue(val);
+            length = RSTRING(str)->len;
+
+            if (length > 0)
+            {
+                MQPTR pBuffer;
+                if(pqm->trace_level > 1)
+                    printf("WMQ::QueueManager#initialize() Setting ssl_peer_name:%s\n",
+                        RSTRING(str)->ptr);
+
+                /* Include null at end of string */
+                pBuffer = ALLOC_N(char, length+1);
+                memcpy(pBuffer, RSTRING(str)->ptr, length+1);
+
+                pmqcd->SSLPeerNameLength = length;
+                pmqcd->SSLPeerNamePtr    = pBuffer;
+                pqm->ssl_peer_name_ptr   = pBuffer;
+            }
+        }
+        WMQ_HASH2MQLONG(hash,keep_alive_interval,         pmqcd->KeepAliveInterval)
+
+        /* Only set if SSL options are supplied, otherwise
+        * environment variables are ignored: MQSSLKEYR and MQSSLCRYP
+        * Any SSL info in the client channel definition tables is also ignored
+        */
+        if (!NIL_P(rb_hash_aref(hash, ID2SYM(ID_key_repository))) ||
+            !NIL_P(rb_hash_aref(hash, ID2SYM(ID_crypto_hardware))))
+        {
+            /* Process MQSCO */
+            WMQ_HASH2MQCHARS(hash,key_repository,              pqm->ssl_config_opts.KeyRepository)
+            WMQ_HASH2MQCHARS(hash,crypto_hardware,             pqm->ssl_config_opts.CryptoHardware)
+
+            pqm->connect_options.SSLConfigPtr = &pqm->ssl_config_opts;
+        }
+    #endif
+
     }
     else
     {
-        WMQ_HASH2MQCHARS(hash,channel_name,            pmqcd->ChannelName)
+        pqm->is_client_conn = 0;                       /* Set to Server connection */
     }
+#endif
 
-  #ifdef MQCD_VERSION_4
-    WMQ_HASH2MQLONG(hash,heartbeat_interval,          pmqcd->HeartbeatInterval)
-    /* TO DO:
-    WMQ_HASH2MQLONG(hash,exit_name_length,            pmqcd->ExitNameLength)
-    WMQ_HASH2MQLONG(hash,exit_data_length,            pmqcd->ExitDataLength)
-    WMQ_HASH2MQLONG(hash,send_exits_defined,          pmqcd->SendExitsDefined)
-    WMQ_HASH2MQLONG(hash,receive_exits_defined,       pmqcd->ReceiveExitsDefined)
-    TO_PTR (send_exit_ptr,               pmqcd->SendExitPtr)
-    TO_PTR (send_user_data_ptr,          pmqcd->SendUserDataPtr)
-    TO_PTR (receive_exit_ptr,            pmqcd->ReceiveExitPtr)
-    TO_PTR (receive_user_data_ptr,       pmqcd->ReceiveUserDataPtr)
-    */
-  #endif
-  #ifdef MQCD_VERSION_6
-    val = rb_hash_aref(hash, ID2SYM(ID_long_remote_user_id));
-    if (!NIL_P(val))
-    {
-        str = StringValue(val);
-        length = RSTRING(str)->len;
-
-        if (length > 0)
-        {
-            MQPTR pBuffer;
-            if(pqm->trace_level > 1)
-                printf("WMQ::QueueManager#initialize() Setting long_remote_user_id:%s\n",
-                       RSTRING(str)->ptr);
-
-            /* Include null at end of string */
-            pBuffer = ALLOC_N(char, length+1);
-            memcpy(pBuffer, RSTRING(str)->ptr, length+1);
-
-            pmqcd->LongRemoteUserIdLength = length;
-            pmqcd->LongRemoteUserIdPtr    = pBuffer;
-            pqm->long_remote_user_id_ptr  = pBuffer;
-        }
-    }
-    WMQ_HASH2MQBYTES(hash,remote_security_id,          pmqcd->RemoteSecurityId)
-    WMQ_HASH2MQCHARS(hash,ssl_cipher_spec,             pmqcd->SSLCipherSpec)
-  #endif
-  #ifdef MQCD_VERSION_7
-    val = rb_hash_aref(hash, ID2SYM(ID_ssl_peer_name));
-    if (!NIL_P(val))
-    {
-        str = StringValue(val);
-        length = RSTRING(str)->len;
-
-        if (length > 0)
-        {
-            MQPTR pBuffer;
-            if(pqm->trace_level > 1)
-                printf("WMQ::QueueManager#initialize() Setting ssl_peer_name:%s\n",
-                       RSTRING(str)->ptr);
-
-            /* Include null at end of string */
-            pBuffer = ALLOC_N(char, length+1);
-            memcpy(pBuffer, RSTRING(str)->ptr, length+1);
-
-            pmqcd->SSLPeerNameLength = length;
-            pmqcd->SSLPeerNamePtr    = pBuffer;
-            pqm->ssl_peer_name_ptr   = pBuffer;
-        }
-    }
-    WMQ_HASH2MQLONG(hash,keep_alive_interval,         pmqcd->KeepAliveInterval)
-
-    /* Process MQSCO */
-    WMQ_HASH2MQCHARS(hash,key_repository,              pqm->ssl_config_opts.KeyRepository)
-    WMQ_HASH2MQCHARS(hash,crypto_hardware,             pqm->ssl_config_opts.CryptoHardware)
-  #endif
+#ifdef MQCNO_VERSION_4
     /* Process MQCNO */
     WMQ_HASH2MQLONG(hash,connect_options,             pqm->connect_options.Options)
-
-  #ifdef MQCNO_VERSION_4
-    /* Only set if SSL options are supplied, otherwise
-     * environment variables are ignored: MQSSLKEYR and MQSSLCRYP
-     * Any SSL info in the client channel definition tables is also ignored
-     */
-    if (!NIL_P(rb_hash_aref(hash, ID2SYM(ID_key_repository))) ||
-        !NIL_P(rb_hash_aref(hash, ID2SYM(ID_crypto_hardware))))
-    {
-        pqm->connect_options.SSLConfigPtr = &pqm->ssl_config_opts;
-    }
-  #endif
+#endif
 
   /* --------------------------------------------------
-   * TO DO:   MQAIR Structure - LDAP Security
+   * TODO:   MQAIR Structure - LDAP Security
    * --------------------------------------------------*/
 
-#endif
     return Qnil;
 }
 
@@ -388,6 +401,8 @@ VALUE QueueManager_connect(VALUE self)
     Data_Get_Struct(self, QUEUE_MANAGER, pqm);
     pqm->already_connected = 0;
 
+    Queue_manager_mq_load(pqm);                       /* Load MQ Library */
+
     name = rb_iv_get(self,"@name");
     name = StringValue(name);
 
@@ -399,10 +414,11 @@ VALUE QueueManager_connect(VALUE self)
         if(pqm->trace_level)
             printf("WMQ::QueueManager#connect() Already connected to Queue Manager:%s, Disconnecting first!\n", RSTRING(name)->ptr);
 
-        MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
+        pqm->MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
     }
 
-    MQCONNX(RSTRING(name)->ptr,      /* queue manager                  */
+    pqm->MQCONNX(
+            RSTRING(name)->ptr,      /* queue manager                  */
             &pqm->connect_options,   /* Connection Options             */
             &pqm->hcon,              /* connection handle              */
             &pqm->comp_code,         /* completion code                */
@@ -461,7 +477,7 @@ VALUE QueueManager_disconnect(VALUE self)
 
     if (!pqm->already_connected)
     {
-        MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
+        pqm->MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
 
         if(pqm->trace_level) printf("WMQ::QueueManager#disconnect() MQDISC completed with reason:%s\n", wmq_reason(pqm->reason_code));
 
@@ -520,7 +536,7 @@ VALUE QueueManager_commit(VALUE self)
 
     if(pqm->trace_level) printf ("WMQ::QueueManager#commit() Queue Manager Handle:%ld\n", pqm->hcon);
 
-    MQCMIT(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
+    pqm->MQCMIT(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
 
     if(pqm->trace_level) printf("WMQ::QueueManager#commit() MQCMIT completed with reason:%s\n", wmq_reason(pqm->reason_code));
 
@@ -572,7 +588,7 @@ VALUE QueueManager_backout(VALUE self)
 
     if(pqm->trace_level) printf ("WMQ::QueueManager#backout() Queue Manager Handle:%ld\n", pqm->hcon);
 
-    MQBACK(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
+    pqm->MQBACK(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
 
     if(pqm->trace_level) printf("WMQ::QueueManager#backout() MQBACK completed with reason:%s\n", wmq_reason(pqm->reason_code));
 
@@ -622,7 +638,7 @@ VALUE QueueManager_begin(VALUE self)
 
     if(pqm->trace_level) printf ("WMQ::QueueManager#begin() Queue Manager Handle:%ld\n", pqm->hcon);
 
-    MQBEGIN(pqm->hcon, 0, &pqm->comp_code, &pqm->reason_code);
+    pqm->MQBEGIN(pqm->hcon, 0, &pqm->comp_code, &pqm->reason_code);
 
     if(pqm->trace_level) printf("WMQ::QueueManager#begin() MQBEGIN completed with reason:%s\n", wmq_reason(pqm->reason_code));
 
@@ -639,6 +655,225 @@ VALUE QueueManager_begin(VALUE self)
                      wmq_reason(pqm->reason_code));
         }
         return Qfalse;
+    }
+
+    return Qtrue;
+}
+
+/*
+ * call-seq:
+ *   put(parameters)
+ *
+ * Put a message to the queue without having to first open the queue
+ * Recommended for reply queues that change frequently
+ *
+ * * parameters: a Hash consisting of one or more of the following parameters
+ *
+ * Summary of parameters and their WebSphere MQ equivalents
+ *  queue.get(                                             # WebSphere MQ Equivalents:
+ *   :q_name             => 'Queue Name',                  # MQOD.ObjectName
+ *   :q_name             => { queue_manager=>'QMGR_name',  # MQOD.ObjectQMgrName
+ *                            q_name       =>'q_name'}
+ *   :message            => my_message,                    # n/a : Instance of Message
+ *   :data               => "Hello World",                 # n/a : Data to send
+ *   :sync               => false,                         # MQGMO_SYNCPOINT
+ *   :new_id             => true,                          # MQPMO_NEW_MSG_ID & MQPMO_NEW_CORREL_ID
+ *   :new_msg_id         => true,                          # MQPMO_NEW_MSG_ID
+ *   :new_correl_id      => true,                          # MQPMO_NEW_CORREL_ID
+ *   :fail_if_quiescing  => true,                          # MQOO_FAIL_IF_QUIESCING
+ *   :options            => WMQ::MQPMO_FAIL_IF_QUIESCING   # MQPMO_*
+ *   )
+ *
+ * Mandatory Parameters
+ * * :q_name => String
+ *   * Name of the existing WebSphere MQ local queue, model queue or remote queue to open
+ *   * To open remote queues for which a local remote queue definition is not available
+ *     pass a Hash as q_name (see q_name => Hash)
+ *       OR
+ * * :q_name => Hash
+ *   * q_name => String
+ *     * Name of the existing WebSphere MQ local queue, model queue or remote queue to open
+ *   * :q_mgr_name => String
+ *     * Name of the remote WebSphere MQ queue manager to send the message to.
+ *     * This allows a message to be written to a queue on a remote queue manager
+ *       where a remote queue definition is not defined locally
+ *     * Commonly used to reply to messages from remote systems
+ *     * If q_mgr_name is the same as the local queue manager name then the message
+ *       is merely written to the local queue.
+ *     * Note: q_mgr_name should only be supplied when putting messages to the queue.
+ *         It is not possible to get messages from a queue on a queue manager other
+ *         than the currently connected queue manager
+ *
+ * * Either :message or :data must be supplied
+ *   * If both are supplied, then :data will be written to the queue. The data in :message
+ *     will be ignored
+ *
+ * Optional Parameters
+ * * :data => String
+ *   * Data to be written to the queue. Can be binary or text data
+ *
+ * * :message => Message
+ *   * An instance of the WMQ::Message
+ *   * The Message descriptor, headers and data is retrieved from :message
+ *     * message.data is ignored if :data is supplied
+ *
+ * * :sync => true or false
+ *   * Determines whether the get is performed under synchpoint.
+ *     I.e. Under the current unit of work
+ *      Default: false
+ *
+ * * :new_id => true or false
+ *   * Generate a new message id and correlation id for this
+ *     message. :new_msg_id and :new_correl_id will be ignored
+ *     if this parameter is true
+ *      Default: false
+ *
+ * * :new_msg_id => true or false
+ *   * Generate a new message id for this message
+ *   * Note: A blank message id will result in a new message id anyway.
+ *     However, for subsequent puts using the same message descriptor, the same
+ *     message id will be used.
+ *      Default: false
+ *
+ * * :new_correl_id => true or false
+ *   * Generate a new correlation id for this message
+ *      Default: false
+ *
+ * * :fail_if_quiescing => true or false
+ *   * Determines whether the WMQ::Queue#put call will fail if the queue manager is
+ *     in the process of being quiesced.
+ *   * Note: This interface differs from other WebSphere MQ interfaces,
+ *     they do not default to true.
+ *      Default: true
+ *      Equivalent to: MQGMO_FAIL_IF_QUIESCING
+ *
+ *   * Note: As part of the application design, carefull consideration
+ *     should be given as to when to allow a transaction or
+ *     unit of work to complete or fail under this condition.
+ *     As such it is important to include this option where
+ *     appropriate so that MQ Administrators can shutdown the
+ *     queue managers without having to resort to the 'immediate'
+ *     shutdown option.
+ *
+ * * :options => Fixnum (Advanced MQ Use only)
+ *   * Numeric field containing any of the MQ Put message options or'd together
+ *     * E.g. :options => WMQ::MQPMO_PASS_IDENTITY_CONTEXT | WMQ::MQPMO_ALTERNATE_USER_AUTHORITY
+ *   * Note: If :options is supplied, it is applied first, then the above parameters are
+ *     applied afterwards.
+ *   * One or more of the following values:
+ *       WMQ::MQPMO_NO_SYNCPOINT
+ *       WMQ::MQPMO_LOGICAL_ORDER
+ *       WMQ::MQPMO_NO_CONTEXT
+ *       WMQ::MQPMO_DEFAULT_CONTEXT
+ *       WMQ::MQPMO_PASS_IDENTITY_CONTEXT
+ *       WMQ::MQPMO_PASS_ALL_CONTEXT
+ *       WMQ::MQPMO_SET_IDENTITY_CONTEXT
+ *       WMQ::MQPMO_SET_ALL_CONTEXT
+ *       WMQ::MQPMO_ALTERNATE_USER_AUTHORITY
+ *       WMQ::MQPMO_RESOLVE_LOCAL_Q
+ *       WMQ::MQPMO_NONE
+ *   * Please see the WebSphere MQ documentation for more details on the above options
+ *      Default: WMQ::MQPMO_NONE
+ *
+ * Returns:
+ * * true : On Success
+ * * false: On Failure
+ *
+ *   comp_code and reason_code are also updated.
+ *   reason will return a text description of the reason_code
+ *
+ * Throws:
+ * * WMQ::WMQException if comp_code == MQCC_FAILED
+ * * Except if :exception_on_error => false was supplied as a parameter
+ *   to QueueManager.new
+ */
+VALUE QueueManager_put(VALUE self, VALUE hash)
+{
+    MQLONG   BufferLength;           /* Length of the message in Buffer */
+    PMQVOID  pBuffer;                /* Message data                  */
+    /*-----------------10/22/2006 7:11PM----------------
+     * TODO: Need dynamic buffer here!
+     * --------------------------------------------------*/
+    MQBYTE   header_buffer[65535];   /* message buffer for header use */
+    MQMD     md = {MQMD_DEFAULT};    /* Message Descriptor            */
+    MQPMO    pmo = {MQPMO_DEFAULT};  /* put message options           */
+    MQOD     od = {MQOD_DEFAULT};    /* Object Descriptor             */
+    VALUE    q_name;
+    VALUE    str;
+    size_t   size;
+    size_t   length;
+    VALUE    val;
+
+    PQUEUE_MANAGER pqm;
+    Data_Get_Struct(self, QUEUE_MANAGER, pqm);
+
+    Check_Type(hash, T_HASH);
+
+    q_name = rb_hash_aref(hash, ID2SYM(ID_q_name));
+
+    if (NIL_P(q_name))
+    {
+        rb_raise(rb_eArgError,
+                 "Mandatory parameter :q_name is missing from WMQ::QueueManager::put1()");
+    }
+
+    /* --------------------------------------------------
+     * If :q_name is a hash, extract :q_name and :q_mgr_name
+     * --------------------------------------------------*/
+    if(TYPE(q_name) == T_HASH)
+    {
+        WMQ_HASH2MQCHARS(q_name, q_mgr_name, od.ObjectQMgrName)
+
+        q_name = rb_hash_aref(val, ID2SYM(ID_q_name));
+        if (NIL_P(q_name))
+        {
+            rb_raise(rb_eArgError,
+                     "Mandatory parameter :q_name missing from :q_name hash passed to WMQ::QueueManager#put");
+        }
+    }
+
+    WMQ_STR2MQCHARS(q_name,od.ObjectName)
+
+    Queue_extract_put_message_options(hash, &pmo);
+    Message_build(&pqm->p_buffer, &pqm->buffer_size, pqm->trace_level,
+                  hash, &pBuffer, &BufferLength,    &md);
+
+    if(pqm->trace_level) printf("WMQ::QueueManager#put Queue Manager Handle:%ld\n", pqm->hcon);
+
+    pqm->MQPUT1(
+           pqm->hcon,           /* connection handle               */
+           &od,                 /* object descriptor               */
+           &md,                 /* message descriptor              */
+           &pmo,                /* put message options             */
+           BufferLength,        /* message length                  */
+           pBuffer,             /* message buffer                  */
+           &pqm->comp_code,     /* completion code                 */
+           &pqm->reason_code);  /* reason code                     */
+
+    if(pqm->trace_level) printf("WMQ::QueueManager#put MQPUT1 ended with reason:%s\n", wmq_reason(pqm->reason_code));
+
+    if (pqm->reason_code != MQRC_NONE)
+    {
+        if (pqm->exception_on_error)
+        {
+            VALUE qmgr_name = QueueManager_name(self);
+
+            rb_raise(wmq_exception,
+                     "WMQ::QueueManager.put(). Error writing a message to Queue:%s on Queue Manager:%s reason:%s",
+                     RSTRING(q_name)->ptr,
+                     RSTRING(qmgr_name)->ptr,
+                     wmq_reason(pqm->reason_code));
+        }
+        return Qfalse;
+    }
+    else
+    {
+        VALUE message = rb_hash_aref(hash, ID2SYM(ID_message));
+        if(!NIL_P(message))
+        {
+            VALUE descriptor = rb_funcall(message, ID_descriptor, 0);
+            from_mqmd(descriptor, &md);                   /* This should be optimized to output only fields */
+        }
     }
 
     return Qtrue;
@@ -1049,7 +1284,7 @@ static int QueueManager_execute_each (VALUE array, PQUEUE_MANAGER pqm)
     wmq_selector(selector_id, &selector_type, &selector);
     if(NIL_P(value))
     {
-        mqAddInquiry(pqm->admin_bag, selector, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqAddInquiry(pqm->admin_bag, selector, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Adding Inquiry to the admin bag")
         return 0;
     }
@@ -1062,18 +1297,18 @@ static int QueueManager_execute_each (VALUE array, PQUEUE_MANAGER pqm)
                 MQLONG val_selector, val_selector_type;
                 wmq_selector(rb_to_id(value), &val_selector_type, &val_selector);
 
-                mqAddInteger(pqm->admin_bag, selector, val_selector, &pqm->comp_code, &pqm->reason_code);
+                pqm->mqAddInteger(pqm->admin_bag, selector, val_selector, &pqm->comp_code, &pqm->reason_code);
             }
             else
             {
-                mqAddInteger(pqm->admin_bag, selector, NUM2LONG(value), &pqm->comp_code, &pqm->reason_code);
+                pqm->mqAddInteger(pqm->admin_bag, selector, NUM2LONG(value), &pqm->comp_code, &pqm->reason_code);
             }
             CHECK_COMPLETION_CODE("Adding Queue Type to the admin bag")
         break;
 
         case MQIT_STRING:
             str = StringValue(value);
-            mqAddString(pqm->admin_bag, selector, MQBL_NULL_TERMINATED, RSTRING(str)->ptr, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqAddString(pqm->admin_bag, selector, MQBL_NULL_TERMINATED, RSTRING(str)->ptr, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Adding Queue name to the admin bag")
         break;
 
@@ -1154,23 +1389,23 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
 
     if (pqm->admin_bag == MQHB_UNUSABLE_HBAG)         /* Lazy create admin bag */
     {
-        mqCreateBag(MQCBO_ADMIN_BAG, &pqm->admin_bag, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqCreateBag(MQCBO_ADMIN_BAG, &pqm->admin_bag, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Creating the admin bag")
     }
     else
     {
-        mqClearBag(pqm->admin_bag, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqClearBag(pqm->admin_bag, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Clearing the admin bag")
     }
 
     if (pqm->reply_bag == MQHB_UNUSABLE_HBAG)         /* Lazy create reply bag */
     {
-        mqCreateBag(MQCBO_ADMIN_BAG, &pqm->reply_bag, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqCreateBag(MQCBO_ADMIN_BAG, &pqm->reply_bag, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Creating the reply bag")
     }
     else
     {
-        mqClearBag(pqm->reply_bag, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqClearBag(pqm->reply_bag, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Clearing the reply bag")
     }
 
@@ -1186,7 +1421,8 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
 #endif
     if(pqm->trace_level) printf ("WMQ::QueueManager#execute() Queue Manager Handle:%ld\n", pqm->hcon);
 
-    mqExecute(pqm->hcon,                              /* MQ connection handle                 */
+    pqm->mqExecute(
+              pqm->hcon,                              /* MQ connection handle                 */
               wmq_command_lookup(rb_to_id(val)),      /* Command to be executed               */
               MQHB_NONE,                              /* No options bag                       */
               pqm->admin_bag,                         /* Handle to bag containing commands    */
@@ -1214,7 +1450,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
         MQLONG number_of_items;
         int    bag_index, items, k;
 
-        mqCountItems(pqm->reply_bag, MQHA_BAG_HANDLE, &numberOfBags, &pqm->comp_code, &pqm->reason_code);
+        pqm->mqCountItems(pqm->reply_bag, MQHA_BAG_HANDLE, &numberOfBags, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Counting number of bags returned from the command server")
 
         if(pqm->trace_level > 1) printf("WMQ::QueueManager#execute() %ld bags returned\n", numberOfBags);
@@ -1224,17 +1460,18 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
         {
             hash = rb_hash_new();
 
-            mqInquireBag(pqm->reply_bag, MQHA_BAG_HANDLE, bag_index, &qAttrsBag, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqInquireBag(pqm->reply_bag, MQHA_BAG_HANDLE, bag_index, &qAttrsBag, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Inquiring for the attribute bag handle")
 
-            mqCountItems(qAttrsBag, MQSEL_ALL_SELECTORS, &number_of_items, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqCountItems(qAttrsBag, MQSEL_ALL_SELECTORS, &number_of_items, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Counting number of items in this bag")
 
             if(pqm->trace_level > 1) printf("WMQ::QueueManager#execute() Bag %ld contains %ld items\n", bag_index, number_of_items);
 
             for (items=0; items<number_of_items; items++) /* For each item, extract it's value */
             {
-                mqInquireItemInfo(qAttrsBag,               /* I: Bag handle */
+                pqm->mqInquireItemInfo(
+                                  qAttrsBag,               /* I: Bag handle */
                                   MQSEL_ANY_SELECTOR,      /* I: Item selector */
                                   items,                   /* I: Item index */
                                   &selector,               /* O: Selector of item */
@@ -1248,7 +1485,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
                     switch (item_type)
                     {
                         case MQIT_INTEGER:
-                            mqInquireInteger(qAttrsBag, MQSEL_ALL_SELECTORS, items, &qDepth, &pqm->comp_code, &pqm->reason_code);
+                            pqm->mqInquireInteger(qAttrsBag, MQSEL_ALL_SELECTORS, items, &qDepth, &pqm->comp_code, &pqm->reason_code);
                             CHECK_COMPLETION_CODE("Inquiring Integer item")
 
                             if(pqm->trace_level > 1)
@@ -1258,7 +1495,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
                         break;
 
                         case MQIT_STRING:
-                            mqInquireString(qAttrsBag, MQSEL_ALL_SELECTORS, items, WMQ_EXEC_STRING_INQ_BUFFER_SIZE-1, inquiry_buffer,
+                            pqm->mqInquireString(qAttrsBag, MQSEL_ALL_SELECTORS, items, WMQ_EXEC_STRING_INQ_BUFFER_SIZE-1, inquiry_buffer,
                                             &size, NULL, &pqm->comp_code, &pqm->reason_code);
                             if(pqm->trace_level > 2)
                                 printf("WMQ::QueueManager#execute() mqInquireString buffer size: %ld, string size:%ld\n",
@@ -1311,13 +1548,13 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
             MQLONG result_comp_code, result_reason_code;
             MQHBAG result_bag;
 
-            mqInquireBag(pqm->reply_bag, MQHA_BAG_HANDLE, 0, &result_bag, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqInquireBag(pqm->reply_bag, MQHA_BAG_HANDLE, 0, &result_bag, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Getting the result bag handle")
 
-            mqInquireInteger(result_bag, MQIASY_COMP_CODE, MQIND_NONE, &result_comp_code, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqInquireInteger(result_bag, MQIASY_COMP_CODE, MQIND_NONE, &result_comp_code, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Getting the completion code from the result bag")
 
-            mqInquireInteger(result_bag, MQIASY_REASON, MQIND_NONE, &result_reason_code, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqInquireInteger(result_bag, MQIASY_REASON, MQIND_NONE, &result_reason_code, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Getting the reason code from the result bag")
 
             pqm->comp_code   = result_comp_code;
