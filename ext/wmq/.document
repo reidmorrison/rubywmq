@@ -1,7 +1,0 @@
-wmq_const.rb
-wmq.c
-wmq_queue_manager.c
-wmq_message.c
-wmq_queue.c
-message.rb
-wmq_const_admin.rb

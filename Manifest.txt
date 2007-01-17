@@ -1,6 +1,5 @@
 .document
 ext/wmq.rb
-ext/wmq/wmq.rb
 ext/wmq/wmq_temp.rb
 ext/wmq/wmq.h
 ext/wmq/wmq.c

@@ -1000,7 +1000,7 @@ VALUE Queue_put(VALUE self, VALUE hash)
         if(!NIL_P(message))
         {
             VALUE descriptor = rb_funcall(message, ID_descriptor, 0);
-            from_mqmd(descriptor, &md);                   /* This should be optimized to output only fields */
+            Message_from_mqmd(descriptor, &md);                /* This should be optimized to output only fields */
         }
     }
 

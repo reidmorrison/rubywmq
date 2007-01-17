@@ -78,17 +78,18 @@ module WMQ
         reply.descriptor[:expiry]     = request.descriptor[:expiry]
         reply.descriptor[:priority]   = request.descriptor[:priority]
         reply.descriptor[:persistence]= request.descriptor[:persistence]
-
-        # Set Message Id based on report options supplied
-        if request.descriptor[:report] | MQRO_PASS_MSG_ID
-          reply.descriptor[:msg_id] = request.descriptor[:msg_id]
-        end
+        reply.descriptor[:format] = request.descriptor[:format]
 
         # Set Correlation Id based on report options supplied
-        if request.descriptor[:report] | MQRO_PASS_CORREL_ID
+        if request.descriptor[:report] & WMQ::MQRO_PASS_CORREL_ID != 0
           reply.descriptor[:correl_id] = request.descriptor[:correl_id]
         else
-          reply.descriptor[:msg_id] = request.descriptor[:correl_id]
+          reply.descriptor[:correl_id] = request.descriptor[:msg_id]
+        end
+
+        # Set Message Id based on report options supplied
+        if request.descriptor[:report] & WMQ::MQRO_PASS_MSG_ID != 0
+          reply.descriptor[:msg_id] = request.descriptor[:msg_id]
         end
 
         parms[:q_name]    = request.descriptor[:reply_to_q]
@@ -115,12 +116,12 @@ module WMQ
       dlh = {
         :header_type     =>:dead_letter_header,
         :reason          =>parms.delete(:reason),
-        :dest_q_name     =>queue.name,
-        :dest_q_mgr_name =>qmgr.name}
+        :dest_q_name     =>parms.delete(:q_name),
+        :dest_q_mgr_name =>self.name}
 
       message.headers.unshift(dlh)
       parms[:q_name]='SYSTEM.DEAD.LETTER.QUEUE'  #TODO Should be obtained from QMGR config
-      return qmgr.put(parms)
+      return self.put(parms)
     end
 
   end

@@ -20,20 +20,24 @@
           'headers='=>nil,
           'data='=>nil,
           'header_type'=>nil,
+          'to_s'=>nil,
+          'xml'=>nil,
+          'name_value'=>nil,
     }
     wmq_structs = [
       # Message Descriptor
       {:file=>'cmqc.h', :struct=>'MQMD'},
 
       # Message Descriptor 1
-      {:file=>'cmqc.h', :struct=>'MQMD1'},
+      {:file=>'cmqc.h', :struct=>'MQMD1', :other_keys=>[:remote_q_name, :remote_q_mgr_name]},
 
       # Rules and formatting header2
       {:file=>'cmqc.h', :struct=>'MQRFH2', :header=>'rf_header_2', :struct_id=>'MQRFH_STRUC_ID',
+       :other_keys=>[:xml],
        :custom=>true }, # Implement custom Message_build_rf_header_2 and Message_deblock_rf_header_2
 
       # Rules and formatting header
-      {:file=>'cmqc.h', :struct=>'MQRFH', :header=>'rf_header', 
+      {:file=>'cmqc.h', :struct=>'MQRFH', :header=>'rf_header', :other_keys=>[:name_value],
        :custom=>true }, # Implement custom Message_build_rf_header and Message_deblock_rf_header
 
       # Dead Letter Header
@@ -132,54 +136,105 @@ void wmq_structs_id_init()
     wmq_structs.each do |struct|
       elements = struct[:elements]
       struct_name = struct[:struct]
+      variable = 'p'+struct_name.downcase
 %>
 /* --------------------------------------------------------------------------
  *  Convert between <%=struct_name%> and Hash
- * --------------------------------------------------------------------------*/<%
-      ['TO', 'FROM'].each do |direction|
-        variable = 'p'+struct_name.downcase %>
-void <%=direction.downcase%>_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* <%=variable%>)
+ * --------------------------------------------------------------------------*/
+void Message_from_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* <%=variable%>)
 {
+    VALUE  str;
+    size_t size;
+    size_t length; 
+    size_t i;
+    char*  pChar;
+        
+<%
+      elements.each do |item|
+        type = item[0]
+        name = item[1]
+          
+        next if @@field_ignore_list.include?(name) ||
+                (name=='Format' && struct[:header])
+          
+        match = /(MQ\D+)/.match(type)
+        type = "#{match[1]}S" if match[1] != type
+%><%=   if type == 'MQMDS'
+          "    %-16s(hash, &#{variable}->%s);\n" % ['Message_from_mqmd1', name]
+        else
+          "    %-16s(hash, %-30s #{variable}->%s)\n" % ["WMQ_#{type}2HASH", rubyize_name(name)+',',name]
+        end %><%
+      end 
+%>}
+
+#if RUBY_VERSION_CODE > 183
+static int Message_to_<%=struct_name.downcase%>_each (VALUE key, VALUE value, <%=struct_name%>* p<%=struct_name.downcase%>)
+{
+#else
+static int Message_to_<%=struct_name.downcase%>_each (VALUE array, <%=struct_name%>* p<%=struct_name.downcase%>)
+{
+    VALUE key   = rb_ary_shift(array);
+    VALUE value = rb_ary_shift(array);
+#endif
     VALUE str;
     size_t size;
     size_t length; 
-<%=     if direction == 'TO'
-          "    VALUE val;"
+    VALUE  val;
+    ID     id = rb_to_id(key);
+    
+   <% contains = nil
+      elements.each do |item|
+        type = item[0]
+        name = item[1]
+          
+        next if @@field_ignore_list.include?(name) ||
+                (name=='Format' && struct[:header])
+          
+        match = /(MQ\D+)/.match(type)
+        type = "#{match[1]}S" if match[1] != type
+%><%=   if type == 'MQMDS'
+          contains = 'mqmd1'
+          ""
         else
-          "    size_t i;\n    char* pChar;"
-        end %>
-        
-    Check_Type(hash, T_HASH);
+          "%-35s { %-16s(value,#{variable}->#{name}) }\n    else" % [" if(id == ID_#{rubyize_name(name)})", "WMQ_STR2#{type}"]
+        end%><%
+      end
+      if struct[:other_keys]
+        struct[:other_keys].each do |key|
+        %> if(id == ID_<%=key.to_s%>) {}
+    else<%   end
+      end
+%><%=struct[:header]?" if(id != ID_header_type)":""%><%
+      if contains 
+%> {
+#if RUBY_VERSION_CODE > 183
+      Message_to_<%= contains%>_each(key, value, &pmqxqh->MsgDesc); 
+#else
+      rb_ary_push(array, key);
+      rb_ary_push(array, value);
+      Message_to_<%= contains%>_each(array, &pmqxqh->MsgDesc); 
+#endif
+   }<%
+      else%>
+    {
+        val = rb_funcall(key, ID_to_s, 0);
+        rb_raise(rb_eArgError, "WMQ::Message#to_<%=struct_name.downcase%> Unknown symbol :%s supplied", RSTRING(val)->ptr);
+    }
+<%    end%>
+    return 0;
+}
 
-    /* Process <%=struct_name%> */
-<%
-        elements.each do |item|
-          type = item[0]
-          name = item[1]
-          
-          next if @@field_ignore_list.include?(name) ||
-                  (name=='Format' && struct[:header])
-          
-          match = /(MQ\D+)/.match(type)
-          type = "#{match[1]}S" if match[1] != type
-%><%=     if direction == 'TO'
-            if type == 'MQMDS'
-              "    %-16s(hash, &#{variable}->%s);\n" % ['to_mqmd1', name]
-            else
-              "    %-16s(hash, %-30s #{variable}->%s)\n" % ["WMQ_HASH2#{type}", rubyize_name(name)+',',name]
-            end
-          else
-            if type == 'MQMDS'
-              "    %-16s(hash, &#{variable}->%s);\n" % ['from_mqmd1', name]
-            else
-              "    %-16s(hash, %-30s #{variable}->%s)\n" % ["WMQ_#{type}2HASH", rubyize_name(name)+',',name]
-            end 
-          end %><%
-        end 
-%>}
-<%    end 
-    end # wmq_structs.each 
+void Message_to_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* p<%=struct_name.downcase%>)
+{
+#if RUBY_VERSION_CODE > 183
+    rb_hash_foreach(hash, Message_to_<%=struct_name.downcase%>_each, (VALUE)p<%=struct_name.downcase%>);
+#else
+    rb_iterate (rb_each, hash, Message_to_<%=struct_name.downcase%>_each, (VALUE)p<%=struct_name.downcase%>);
+#endif
+}
+<%  end # wmq_structs.each 
 %>
+
 /* --------------------------------------------------------------------------
  *  Extract message data and headers
  * --------------------------------------------------------------------------*/
@@ -214,7 +269,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
             }
             else
             {
-                from_<%=struct[:struct].downcase%>(hash, p_header);
+                Message_from_<%=struct[:struct].downcase%>(hash, p_header);
                 rb_hash_aset(hash, ID2SYM(ID_header_type), ID2SYM(ID_<%=struct[:header]%>));
                 rb_ary_push(headers, hash);
                 size        = <%=if struct[:custom] then
@@ -250,7 +305,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
         strncpy(pmqmd->Format, p_format, MQ_FORMAT_LENGTH);
     }
     
-    from_mqmd(descriptor, pmqmd);
+    Message_from_mqmd(descriptor, pmqmd);
     rb_funcall(self, ID_descriptor_set, 1, descriptor);
     rb_funcall(self, ID_headers_set, 1, headers);
     rb_funcall(self, ID_data_set, 1, rb_str_new(p_data, data_length));
@@ -298,7 +353,7 @@ int Message_build_header (VALUE hash, struct Message_build_header_arg* parg)
             p_data = Message_autogrow_data_buffer(parg, sizeof(<%=struct[:struct]%>));
 
             memcpy(p_data, &<%=struct[:struct]%>_DEF, sizeof(<%=struct[:struct]%>));
-            to_<%=struct[:struct].downcase%>(hash, (P<%=struct[:struct]%>)p_data);
+            Message_to_<%=struct[:struct].downcase%>(hash, (P<%=struct[:struct]%>)p_data);
 <%          if struct[:format] != false%>
             if(parg->next_header_id)
             {

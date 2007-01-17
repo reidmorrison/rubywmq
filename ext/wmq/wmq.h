@@ -14,7 +14,8 @@
  *  limitations under the License.
  * --------------------------------------------------------------------------*/
 
-#include "ruby.h"
+#include <ruby.h>
+#include <version.h>
 #include <cmqc.h>
 #include <cmqxc.h>
 
@@ -196,15 +197,35 @@ void   wmq_selector(ID selector_id, PMQLONG selector_type, PMQLONG selector);
 /* --------------------------------------------------
  * MACROS for moving data between Ruby and MQ
  * --------------------------------------------------*/
-#define WMQ_HASH2MQLONG(HASH,KEY,ELEMENT)       \
-    val = rb_hash_aref(HASH, ID2SYM(ID_##KEY)); \
-    if (!NIL_P(val)) { ELEMENT = NUM2LONG(val); }
+#define WMQ_STR2MQLONG(STR,ELEMENT) \
+    ELEMENT = NUM2LONG(STR);
+
+#define WMQ_STR2MQCHAR(STR,ELEMENT) \
+    ELEMENT = NUM2LONG(STR);
 
 #define WMQ_STR2MQCHARS(STR,ELEMENT)            \
     str = StringValue(STR);                     \
     length = RSTRING(STR)->len;                 \
     size = sizeof(ELEMENT);                     \
     strncpy(ELEMENT, RSTRING(STR)->ptr, length > size ? size : length);
+
+#define WMQ_STR2MQBYTES(STR,ELEMENT)                \
+    str = StringValue(STR);                         \
+    length = RSTRING(str)->len;                     \
+    size = sizeof(ELEMENT);                         \
+    if (length >= size)                             \
+    {                                               \
+        memcpy(ELEMENT, RSTRING(str)->ptr, size);   \
+    }                                               \
+    else                                            \
+    {                                               \
+        memcpy(ELEMENT, RSTRING(str)->ptr, length); \
+        memset(ELEMENT+length, 0, size-length);     \
+    }
+
+#define WMQ_HASH2MQLONG(HASH,KEY,ELEMENT)           \
+    val = rb_hash_aref(HASH, ID2SYM(ID_##KEY));     \
+    if (!NIL_P(val)) { WMQ_STR2MQLONG(val,ELEMENT) }
 
 #define WMQ_HASH2MQCHARS(HASH,KEY,ELEMENT)      \
     val = rb_hash_aref(HASH, ID2SYM(ID_##KEY)); \
@@ -213,26 +234,15 @@ void   wmq_selector(ID selector_id, PMQLONG selector_type, PMQLONG selector);
          WMQ_STR2MQCHARS(val,ELEMENT)           \
     }
 
-#define WMQ_HASH2MQCHAR(HASH,KEY,ELEMENT)      \
-    val = rb_hash_aref(HASH, ID2SYM(ID_##KEY)); \
-    if (!NIL_P(val)) { ELEMENT = NUM2LONG(val); }
+#define WMQ_HASH2MQCHAR(HASH,KEY,ELEMENT)             \
+    val = rb_hash_aref(HASH, ID2SYM(ID_##KEY));       \
+    if (!NIL_P(val)) { WMQ_STR2MQCHAR(val,ELEMENT); } \
 
-#define WMQ_HASH2MQBYTES(hash,KEY,ELEMENT)      \
-    val = rb_hash_aref(hash, ID2SYM(ID_##KEY)); \
+#define WMQ_HASH2MQBYTES(HASH,KEY,ELEMENT)      \
+    val = rb_hash_aref(HASH, ID2SYM(ID_##KEY)); \
     if (!NIL_P(val))                            \
     {                                           \
-         str = StringValue(val);                \
-         length = RSTRING(str)->len;            \
-         size = sizeof(ELEMENT);                \
-         if (length >= size)                    \
-         {                                      \
-            memcpy(ELEMENT, RSTRING(str)->ptr, size);   \
-         }                                              \
-         else                                           \
-         {                                              \
-            memcpy(ELEMENT, RSTRING(str)->ptr, length); \
-            memset(ELEMENT+length, 0, size-length);     \
-         }                                              \
+         WMQ_STR2MQBYTES(val,ELEMENT)(val);     \
     }
 
 #define WMQ_HASH2BOOL(HASH,KEY,ELEMENT)             \

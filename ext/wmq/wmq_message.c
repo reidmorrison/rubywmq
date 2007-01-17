@@ -77,7 +77,7 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
 
         descriptor = rb_funcall(message, ID_descriptor, 0);
         Check_Type(descriptor, T_HASH);
-        to_mqmd(descriptor, pmqmd);
+        Message_to_mqmd(descriptor, pmqmd);
 
         headers = rb_funcall(message, ID_headers, 0);
         Check_Type(headers, T_ARRAY);
@@ -185,7 +185,7 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
  */
 void Message_build_mqmd(VALUE self, PMQMD pmqmd)
 {
-    to_mqmd(rb_funcall(self, ID_descriptor, 0), pmqmd);
+    Message_to_mqmd(rb_funcall(self, ID_descriptor, 0), pmqmd);
 }
 
 /*
@@ -420,7 +420,7 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
     p_data = Message_autogrow_data_buffer(parg, sizeof(MQRFH)+name_value_len);
 
     memcpy(p_data, &MQRFH_DEF, sizeof(MQRFH));
-    to_mqrfh(hash, (PMQRFH)p_data);
+    Message_to_mqrfh(hash, (PMQRFH)p_data);
     ((PMQRFH)p_data)->StrucLength = sizeof(MQRFH) + name_value_len;
     if(parg->next_header_id)
     {
@@ -650,7 +650,7 @@ void Message_build_rf_header_2(VALUE hash, struct Message_build_header_arg* parg
     /* Add MQRFH2 Header, ensure that their is enough space */
     p_data = Message_autogrow_data_buffer(parg, sizeof(MQRFH2));
     memcpy(p_data, &MQRFH2_DEF, sizeof(MQRFH2));
-    to_mqrfh(hash, (PMQRFH2)p_data);
+    Message_to_mqrfh2(hash, (PMQRFH2)p_data);
     if(parg->next_header_id)
     {
         Message_build_set_format(parg->next_header_id, ((PMQRFH2)p_data)->Format);
