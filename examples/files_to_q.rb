@@ -15,7 +15,7 @@
 ################################################################################
 
 #
-# Sample : files_to_q : Place all files in a directory to a queue
+# Example : files_to_q : Place all files in a directory to a queue
 #          Each file is written as a separate message
 #
 require 'find'
@@ -24,7 +24,6 @@ require 'wmq/wmq'
 
 # Call program passing environment name as first parameter
 #   The environment corresponds to an entry in the config file
-#   Defaults to dev
 env = ARGV[0] || raise("Command line argument 'environment' is required")
 config = YAML::load_file('files_to_q.cfg')[env]
 
