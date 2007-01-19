@@ -18,7 +18,7 @@
 # Sample : put() : Put a message to a queue with a dead letter header
 #          Open the queue so that multiple puts can be performed
 #
-require 'wmq'
+require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
   qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:output) do |queue|

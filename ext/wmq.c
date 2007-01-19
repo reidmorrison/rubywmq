@@ -33,6 +33,7 @@ void Init_wmq() {
     rb_define_method(wmq_queue_manager, "connect", QueueManager_connect, 0);        /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "disconnect", QueueManager_disconnect, 0);  /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "open_queue", QueueManager_open_queue, -1); /* in wmq_queue_manager.c */
+    rb_define_method(wmq_queue_manager, "access_queue", QueueManager_open_queue, -1); /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "begin", QueueManager_begin, 0);            /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "commit", QueueManager_commit, 0);          /* in wmq_queue_manager.c */
     rb_define_method(wmq_queue_manager, "backout", QueueManager_backout, 0);        /* in wmq_queue_manager.c */

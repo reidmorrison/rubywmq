@@ -20,7 +20,7 @@
 #
 require 'find'
 require 'yaml'
-require 'wmq'
+require 'wmq/wmq'
 
 # Call program passing environment name as first parameter
 #   The environment corresponds to an entry in the config file

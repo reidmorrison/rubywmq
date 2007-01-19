@@ -14,14 +14,12 @@
 #  limitations under the License.
 ################################################################################
 
-if (RUBY_PLATFORM =~ /win/i) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)
+# Load wmq that uses auto-load library.
+# 
+# If it fails, then it is likely due to this platform not being supported
+# by auto load facility in Ruby WMQ, so try to load client linked library
+begin
   require 'wmq/wmq'
-else
-  # Try to load wmq that uses Queue Manager library (mqm.so)
-  # if it fails, load wmq that uses client library (mqic.so)
-  begin
-    require 'wmq/wmq_server'
-  rescue LoadError
-    require 'wmq/wmq_client'
-  end
+rescue LoadError
+  require 'wmq/wmq_client'
 end

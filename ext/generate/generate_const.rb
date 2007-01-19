@@ -11,7 +11,7 @@ class GenerateConst
           if active
             break if start_exp && line.match(end_exp)
             # Skip Comment lines, then check for a match
-            if (line !~ /^\s*\/\*/) && (match = /\s*#define\s+(#{const_prefix}\w+)[\(\s]+([-\w\dx\"\s]+)/.match(line))
+            if (line !~ /^\s*\/\*/) && (match = /\s*#define\s+(#{const_prefix}\w+)[\(\s]+([-\\\w\dx\'\"\s]+)/.match(line))
               @constants << [match[1], match[2]]
             end
           else
@@ -29,9 +29,9 @@ class GenerateConst
     str = ''
     GenerateConst.extract_const(filename, const_prefix).each do |item|
       const, val = item
-      next if const == const_prefix+'STRUC_ID'
+      next if const.include?('_STRUC_ID')
       next if exclude_exp && const.match(exclude_exp)
-      if val.include?('"')
+      if val.include?('"') || val.include?("'")
         if match = val.match(/(\w+)/)
           val = "'#{match[0]}'"
         else
@@ -81,8 +81,7 @@ class GenerateConst
 ################################################################################
 module WMQ
 END_OF_STRING
-    [ ['Reason Codes', 'cmqc.h','MQRC_'],
-      ['Connect Options','cmqc.h','MQCNO_',/(VERSION)|(CONN_TAG)|(HANDLE_SHARE)/],
+    [ ['Connect Options','cmqc.h','MQCNO_',/(VERSION)|(CONN_TAG)|(HANDLE_SHARE)/],
       ['Open Options', 'cmqc.h','MQOO_' ],
       ['Close Options', 'cmqc.h','MQCO_'],
       ['Match Options', 'cmqc.h','MQMO_'],
@@ -102,6 +101,7 @@ END_OF_STRING
       ['Original Length', 'cmqc.h', 'MQOL_'],
       ['Put Message Options', 'cmqc.h', 'MQPMO_',/(VERSION)|(LENGTH)/],
       ['Put Message Record Fields', 'cmqc.h', 'MQPMRF_',/(VERSION)|(LENGTH)/],
+      ['Reason Codes', 'cmqc.h','MQRC_'],
       ].each do |item|
       str << "\n# #{item[0]}\n"
       str << GenerateConst.rb_const("#{path}/#{item[1]}", item[2], item[3])
@@ -152,10 +152,10 @@ END_OF_STRING
     str << "end\n"
   end
   
-  def self.generate(path)
-    File.open('wmq_const_admin.rb', 'w') {|file| file.write(GenerateConst.admin_consts(path))}
+  def self.generate(path, target_path='')
+    File.open(File.join(target_path,'wmq_const_admin.rb'), 'w') {|file| file.write(GenerateConst.admin_consts(path))}
     puts 'Generated wmq_const_admin.rb'
-    File.open('wmq_const.rb', 'w') {|file| file.write(GenerateConst.wmq_const(path))}
+    File.open(File.join(target_path,'wmq_const.rb'), 'w') {|file| file.write(GenerateConst.wmq_const(path))}
     puts 'Generated wmq_const.rb'
   end
 end  

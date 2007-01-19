@@ -18,7 +18,7 @@
 # Sample : each() : Retrieve all messages from a queue that
 #          have the same correlation id
 #
-require 'wmq'
+require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
   qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:input) do |queue|

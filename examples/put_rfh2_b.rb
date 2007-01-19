@@ -18,7 +18,7 @@
 # Sample : put() : Put a message to a queue with a Refernce header
 #          Open the queue so that multiple puts can be performed
 #
-require 'wmq'
+require 'wmq/wmq'
 
 # The Rules Format header2 (MQRFH2) allows a an XML-like string to be passed as a header
 # to the data.

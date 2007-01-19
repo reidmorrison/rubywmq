@@ -1,7 +1,7 @@
-# Shift include path to use locally built copy of rubwmq
-$:.unshift '../ext'
+# Shift include path to use locally built copy of rubywmq - For testing dev builds only
+#$:.unshift '../lib'
 
-require 'wmq'
+require 'wmq/wmq'
 require 'wmq/wmq_const_admin'
 require 'test/unit'
 class TestTest < Test::Unit::TestCase

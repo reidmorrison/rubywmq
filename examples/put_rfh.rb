@@ -18,7 +18,7 @@
 # Sample : put() : Put a message to a queue with a Refernce header
 #          Open the queue so that multiple puts can be performed
 #
-require 'wmq'
+require 'wmq/wmq'
 
 # The Rules Format header (MQRFH) allows a list of name value pairs to be sent along
 # with a WMQ message. These name value pairs are represented as follows on the "wire":

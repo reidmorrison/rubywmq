@@ -25,7 +25,7 @@
 #   That way the queue would remain after termination of this code.
 #   In this sample the queue will disappear when this program terminates
 #
-require 'wmq'
+require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
   qmgr.open_queue(:q_name => 'SYSTEM.DEFAULT.MODEL.QUEUE',

@@ -15,9 +15,9 @@
 ################################################################################
 
 require 'mkmf'
-require '../../generate/generate_reason'
-require '../../generate/generate_const'
-require '../../generate/generate_structs'
+require 'generate/generate_reason'
+require 'generate/generate_const'
+require 'generate/generate_structs'
 
 include_path = ''
 if RUBY_PLATFORM =~ /mswin32/
@@ -37,8 +37,8 @@ end
 
 # Generate Source Files
 GenerateReason.generate(include_path+'/')
-GenerateConst.generate(include_path+'/')
-GenerateStructs.new(include_path+'/', '../../generate').generate
+GenerateConst.generate(include_path+'/', 'lib')
+GenerateStructs.new(include_path+'/', 'generate').generate
 
 # Generate Makefile
-create_makefile('wmq')
+create_makefile('wmq/wmq')

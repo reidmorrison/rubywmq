@@ -998,13 +998,14 @@ static VALUE QueueManager_open_queue_each(VALUE parameters)
 /*
  * call-seq:
  *   open_queue(...)
+ *   access_queue(...)
  *
  * Open the specified queue, then close it once the
  * supplied code block has completed
  *
  * Parameters:
  * * Since the number of parameters can vary dramatically, all parameters are passed by name in a hash
- * * See Queue.open for the complete list of parameters, except that :queue_manager is _not_ required
+ * * See Queue.open for the complete list of parameters, except that :queue_manager is *not* required
  *   since it is supplied automatically by this method
  *
  * Example:
