@@ -145,6 +145,16 @@ void Queue_manager_mq_free(PQUEUE_MANAGER pqm);
 /*
  * Message
  */
+struct Message_build_header_arg {
+    PMQBYTE* pp_buffer;                               /* Autosize: Pointer to start of total buffer */
+    PMQLONG  p_buffer_size;                           /* Autosize: Size of total buffer */
+    MQLONG   data_length;                             /* Autosize: Length of the data being written */
+    PMQLONG  p_data_offset;                           /* Current offset of data portion in total buffer */
+    MQLONG   trace_level;                             /* Trace level. 0==None, 1==Info 2==Debug ..*/
+    ID       next_header_id;                          /* Used for setting MQ Format to next header */
+    PMQBYTE  data_format;                             /* Format of data. Used when next_header_id == 0 */
+};
+
 void    Message_id_init();
 VALUE   Message_initialize(int argc, VALUE *argv, VALUE self);
 VALUE   Message_clear(VALUE self);
@@ -159,16 +169,6 @@ void    Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG tr
                       VALUE parms, PPMQVOID pp_buffer, PMQLONG p_total_length, PMQMD pmqmd);
 void    Message_build_mqmd(VALUE self, PMQMD pmqmd);
 void    Message_deblock(VALUE message, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_length, MQLONG trace_level);
-
-struct Message_build_header_arg {
-    PMQBYTE* pp_buffer;                               /* Autosize: Pointer to start of total buffer */
-    PMQLONG  p_buffer_size;                           /* Autosize: Size of total buffer */
-    MQLONG   data_length;                             /* Autosize: Length of the data being written */
-    PMQLONG  p_data_offset;                           /* Current offset of data portion in total buffer */
-    MQLONG   trace_level;                             /* Trace level. 0==None, 1==Info 2==Debug ..*/
-    ID       next_header_id;                          /* Used for setting MQ Format to next header */
-    PMQBYTE  data_format;                             /* Format of data. Used when next_header_id == 0 */
-};
 
 int  Message_build_header(VALUE hash, struct Message_build_header_arg* parg);
 

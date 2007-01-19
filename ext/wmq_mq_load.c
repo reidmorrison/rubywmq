@@ -73,7 +73,7 @@
             rb_raise(wmq_exception, "Failed to find API "#FUNC" in MQ Library"); \
         }
 
-    #if defined defined(SOLARIS) || defined(__SVR4)
+    #if defined(SOLARIS) || defined(__SVR4)
         #define MQ_LIBRARY_SERVER "libmqm.so"
         #define MQ_LIBRARY_CLIENT "libmqic.so"
     #else

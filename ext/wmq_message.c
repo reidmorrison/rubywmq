@@ -337,14 +337,14 @@ struct Message_build_rf_header_each_value_arg {
     VALUE    space;
 };
 
-static int Message_build_rf_header_each_value(VALUE value, struct Message_build_rf_header_each_value_arg* parg)
+static VALUE Message_build_rf_header_each_value(VALUE value, struct Message_build_rf_header_each_value_arg* parg)
 {
     Message_name_value_concat(parg->string, parg->key);
     rb_str_concat(parg->string, parg->space);
     Message_name_value_concat(parg->string, value);
     rb_str_concat(parg->string, parg->space);
 
-    return 0;
+    return Qnil;
 }
 
 #if RUBY_VERSION_CODE > 183
@@ -579,7 +579,7 @@ MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer, MQLONG data_le
     return size;
 }
 
-static int Message_build_rf_header_2_each(VALUE element, struct Message_build_header_arg* parg)
+static VALUE Message_build_rf_header_2_each(VALUE element, struct Message_build_header_arg* parg)
 {
     VALUE  str = StringValue(element);
     MQLONG length = RSTRING(str)->len;
@@ -610,7 +610,7 @@ static int Message_build_rf_header_2_each(VALUE element, struct Message_build_he
         *(parg->p_data_offset) += sizeof(length) + length;
     }
 
-    return 0;
+    return Qnil;
 }
 
 /*
