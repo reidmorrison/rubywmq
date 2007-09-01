@@ -22,7 +22,7 @@ VALUE wmq_message;
 VALUE wmq_exception;
 
 void Init_wmq() {
-    VALUE qmgr, wmq;
+    VALUE wmq;
 
     wmq = rb_define_module("WMQ");
 

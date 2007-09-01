@@ -85,7 +85,7 @@ END_OF_STRING
     end
     str << <<END_OF_STRING
     }
-    printf("WMQ::wmq_reason Unknown Reason code:%ld\\n",reason_code);
+    printf("WMQ::wmq_reason Unknown Reason code:%d\\n",reason_code);
     return "Unknown reason code";
 }
 
@@ -138,7 +138,7 @@ ID wmq_selector_id(MQLONG selector)
     {
 #{str_switch}
     }
-    printf("WMQ::wmq_select_text Unknown Selector:%ld\\n",selector);
+    printf("WMQ::wmq_select_text Unknown Selector:%d\\n",selector);
     return rb_intern("unknown_selector_code");
 }
 

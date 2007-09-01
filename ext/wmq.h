@@ -188,6 +188,32 @@ void to_mqdlh(VALUE hash, MQDLH* pmqdlh);
 void from_mqdlh(VALUE hash, MQDLH* pmqdlh);
 
 void wmq_structs_id_init();
+void Message_to_mqmd(VALUE hash, MQMD* pmqmd);
+void Message_to_mqmd1(VALUE hash, MQMD1* pmqmd1);
+void Message_to_mqrfh2(VALUE hash, MQRFH2* pmqrfh2);
+void Message_to_mqrfh(VALUE hash, MQRFH* pmqrfh);
+void Message_to_mqdlh(VALUE hash, MQDLH* pmqdlh);
+void Message_to_mqcih(VALUE hash, MQCIH* pmqcih);
+void Message_to_mqdh(VALUE hash, MQDH* pmqdh);
+void Message_to_mqiih(VALUE hash, MQIIH* pmqiih);
+void Message_to_mqrmh(VALUE hash, MQRMH* pmqrmh);
+void Message_to_mqtm(VALUE hash, MQTM* pmqtm);
+void Message_to_mqtmc2(VALUE hash, MQTMC2* pmqtmc2);
+void Message_to_mqwih(VALUE hash, MQWIH* pmqwih);
+void Message_to_mqxqh(VALUE hash, MQXQH* pmqxqh);
+void Message_from_mqmd(VALUE hash, MQMD* pmqmd);
+void Message_from_mqmd1(VALUE hash, MQMD1* pmqmd1);
+void Message_from_mqrfh2(VALUE hash, MQRFH2* pmqrfh2);
+void Message_from_mqrfh(VALUE hash, MQRFH* pmqrfh);
+void Message_from_mqdlh(VALUE hash, MQDLH* pmqdlh);
+void Message_from_mqcih(VALUE hash, MQCIH* pmqcih);
+void Message_from_mqdh(VALUE hash, MQDH* pmqdh);
+void Message_from_mqiih(VALUE hash, MQIIH* pmqiih);
+void Message_from_mqrmh(VALUE hash, MQRMH* pmqrmh);
+void Message_from_mqtm(VALUE hash, MQTM* pmqtm);
+void Message_from_mqtmc2(VALUE hash, MQTMC2* pmqtmc2);
+void Message_from_mqwih(VALUE hash, MQWIH* pmqwih);
+void Message_from_mqxqh(VALUE hash, MQXQH* pmqxqh);
 
 char*  wmq_reason(MQLONG reason_code);
 ID     wmq_selector_id(MQLONG selector);
@@ -242,7 +268,7 @@ void   wmq_selector(ID selector_id, PMQLONG selector_type, PMQLONG selector);
     val = rb_hash_aref(HASH, ID2SYM(ID_##KEY)); \
     if (!NIL_P(val))                            \
     {                                           \
-         WMQ_STR2MQBYTES(val,ELEMENT)(val);     \
+         WMQ_STR2MQBYTES(val,ELEMENT)           \
     }
 
 #define WMQ_HASH2BOOL(HASH,KEY,ELEMENT)             \

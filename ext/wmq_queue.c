@@ -146,7 +146,7 @@ VALUE QUEUE_alloc(VALUE klass)
     pq->fail_if_exists = 1;
     memset(&pq->q_name, 0, sizeof(pq->q_name));
     pq->buffer_size = 16384;
-    pq->p_buffer = ALLOC_N(char, pq->buffer_size);
+    pq->p_buffer = ALLOC_N(unsigned char, pq->buffer_size);
 
     return Data_Wrap_Struct(klass, 0, QUEUE_free, pq);
 }
@@ -539,7 +539,7 @@ VALUE Queue_close(VALUE self)
         return Qtrue;
     }
 
-    if(pq->trace_level) printf ("WMQ::Queue#close() Queue Handle:%ld, Queue Manager Handle:%ld\n", pq->hobj, pq->hcon);
+    if(pq->trace_level) printf ("WMQ::Queue#close() Queue Handle:%d, Queue Manager Handle:%d\n", pq->hobj, pq->hcon);
 
     pq->MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
 
@@ -680,11 +680,7 @@ VALUE Queue_close(VALUE self)
  */
 VALUE Queue_get(VALUE self, VALUE hash)
 {
-    VALUE    handle;
     VALUE    val;
-    VALUE    str;
-    VALUE    descriptor;
-    VALUE    data;
     VALUE    message;
     PQUEUE   pq;
     MQLONG   flag;
@@ -743,8 +739,8 @@ VALUE Queue_get(VALUE self, VALUE hash)
 
     WMQ_HASH2MQLONG(hash,match, gmo.MatchOptions)                  /* :match */
 
-    if(pq->trace_level > 1) printf("WMQ::Queue#get() Get Message Option: MatchOptions=%ld\n", gmo.MatchOptions);
-    if(pq->trace_level) printf("WMQ::Queue#get() Queue Handle:%ld, Queue Manager Handle:%ld\n", pq->hobj, pq->hcon);
+    if(pq->trace_level > 1) printf("WMQ::Queue#get() Get Message Option: MatchOptions=%d\n", gmo.MatchOptions);
+    if(pq->trace_level) printf("WMQ::Queue#get() Queue Handle:%d, Queue Manager Handle:%d\n", pq->hobj, pq->hcon);
 
     /* If descriptor is re-used
 
@@ -775,16 +771,16 @@ VALUE Queue_get(VALUE self, VALUE hash)
         /* report reason, if any     */
         if (pq->reason_code != MQRC_NONE)
         {
-            if(pq->trace_level>1) printf("WMQ::Queue#get() Growing buffer size from %ld to %ld\n", pq->buffer_size, messlen);
+            if(pq->trace_level>1) printf("WMQ::Queue#get() Growing buffer size from %d to %d\n", pq->buffer_size, messlen);
             /* TODO: Add support for autogrow buffer here */
             if (pq->reason_code == MQRC_TRUNCATED_MSG_FAILED)
             {
                 if(pq->trace_level>2)
-                    printf ("WMQ::Queue#reallocate Resizing buffer from %ld to %ld bytes\n", pq->buffer_size, messlen);
+                    printf ("WMQ::Queue#reallocate Resizing buffer from %d to %d bytes\n", pq->buffer_size, messlen);
 
                 free(pq->p_buffer);
                 pq->buffer_size = messlen;
-                pq->p_buffer = ALLOC_N(char, messlen);
+                pq->p_buffer = ALLOC_N(unsigned char, messlen);
             }
         }
     }
@@ -967,7 +963,7 @@ VALUE Queue_put(VALUE self, VALUE hash)
     Message_build(&pq->p_buffer,  &pq->buffer_size, pq->trace_level,
                   hash, &pBuffer, &BufferLength,    &md);
 
-    if(pq->trace_level) printf("WMQ::Queue#put() Queue Handle:%ld, Queue Manager Handle:%ld\n", pq->hobj, pq->hcon);
+    if(pq->trace_level) printf("WMQ::Queue#put() Queue Handle:%d, Queue Manager Handle:%d\n", pq->hobj, pq->hcon);
 
     pq->MQPUT(
           pq->hcon,            /* connection handle               */
@@ -1306,7 +1302,7 @@ VALUE Queue_each(int argc, VALUE *argv, VALUE self)
         }
         rb_hash_aset(hash, ID2SYM(ID_options), LONG2NUM(get_options));
 
-        if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_FIRST set, get options:%ld\n", get_options);
+        if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_FIRST set, get options:%d\n", get_options);
         browse = 1;
     }
 
@@ -1330,7 +1326,7 @@ VALUE Queue_each(int argc, VALUE *argv, VALUE self)
             }
             rb_hash_aset(hash, ID2SYM(ID_options), LONG2NUM(get_options));
 
-            if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_NEXT set, get options:%ld\n", get_options);
+            if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_NEXT set, get options:%d\n", get_options);
         }
     }
 
