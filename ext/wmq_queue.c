@@ -308,10 +308,7 @@ VALUE Queue_initialize(VALUE self, VALUE hash)
     if(pq->trace_level > 1) printf("WMQ::Queue::new Queue:%s\n", pq->q_name);
 
     val = rb_hash_aref(hash, ID2SYM(ID_dynamic_q_name));   /* :dynamic_q_name */
-    if (!NIL_P(val))
-    {
-        rb_iv_set(self, "@dynamic_q_name", val);
-    }
+    rb_iv_set(self, "@dynamic_q_name", val);
 
     WMQ_HASH2MQBYTES(hash,alternate_security_id,         pq->od.AlternateSecurityId)
     WMQ_HASH2MQLONG(hash,close_options,                 pq->close_options)
