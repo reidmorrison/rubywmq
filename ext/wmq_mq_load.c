@@ -54,6 +54,10 @@
         #define RTLD_GLOBAL 0
     #endif
 
+    #if defined(__linux__) || defined(LINUX)
+        #include <dlfcn.h>
+    #endif
+
     #define MQ_LOAD(LIBRARY)                                                             \
         void* handle = (void*)dlopen(LIBRARY, RTLD_LAZY|RTLD_GLOBAL);                    \
         if (!handle)                                                                     \
