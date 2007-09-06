@@ -490,7 +490,7 @@ MQLONG Message_deblock_rf_header (VALUE hash, PMQBYTE p_data, MQLONG data_len)
 
     rfh_toktype_t toktype;
 
-    if(size > data_len)                               /* Poison Message */
+    if(size < 0 || size > data_len) /* Poison Message */
     {
         printf("WMQ::Message_deblock_rf_header StrucLength supplied in MQRFH exceeds total message length\n");
         return 0;
@@ -533,7 +533,7 @@ MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer, MQLONG data_le
     size_t  length;
     size_t  i;
 
-    if(size > data_len)                               /* Poison Message */
+    if(size < 0 || size > data_len) /* Poison Message */
     {
         printf("WMQ::Message_deblock_rf_header_2 StrucLength supplied in MQRFH exceeds total message length\n");
         return 0;
@@ -546,7 +546,7 @@ MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer, MQLONG data_le
         xml_len = *(PMQLONG)p_data;
         p_data += sizeof(MQLONG);
 
-        if (p_data+xml_len > p_end)
+        if (xml_len < 0 || p_data+xml_len > p_end)
         {
             printf("WMQ::Message#deblock_rf_header_2 Poison Message received, stopping further processing\n");
             p_data = p_end;
