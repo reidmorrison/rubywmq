@@ -419,9 +419,9 @@ VALUE QueueManager_connect(VALUE self)
             &pqm->reason_code);      /* connect reason code            */
 
     if(pqm->trace_level)
-        printf("WMQ::QueueManager#connect() MQCONNX completed with reason:%s, Handle:%d\n",
+        printf("WMQ::QueueManager#connect() MQCONNX completed with reason:%s, Handle:%ld\n",
                wmq_reason(pqm->reason_code),
-               pqm->hcon);
+               (long)pqm->hcon);
 
     if (pqm->comp_code == MQCC_FAILED)
     {
@@ -467,7 +467,7 @@ VALUE QueueManager_disconnect(VALUE self)
     PQUEUE_MANAGER pqm;
     Data_Get_Struct(self, QUEUE_MANAGER, pqm);
 
-    if(pqm->trace_level) printf ("WMQ::QueueManager#disconnect() Queue Manager Handle:%d\n", pqm->hcon);
+    if(pqm->trace_level) printf ("WMQ::QueueManager#disconnect() Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     if (!pqm->already_connected)
     {
@@ -528,7 +528,7 @@ VALUE QueueManager_commit(VALUE self)
     PQUEUE_MANAGER pqm;
     Data_Get_Struct(self, QUEUE_MANAGER, pqm);
 
-    if(pqm->trace_level) printf ("WMQ::QueueManager#commit() Queue Manager Handle:%d\n", pqm->hcon);
+    if(pqm->trace_level) printf ("WMQ::QueueManager#commit() Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     pqm->MQCMIT(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
 
@@ -580,7 +580,7 @@ VALUE QueueManager_backout(VALUE self)
     PQUEUE_MANAGER pqm;
     Data_Get_Struct(self, QUEUE_MANAGER, pqm);
 
-    if(pqm->trace_level) printf ("WMQ::QueueManager#backout() Queue Manager Handle:%d\n", pqm->hcon);
+    if(pqm->trace_level) printf ("WMQ::QueueManager#backout() Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     pqm->MQBACK(pqm->hcon, &pqm->comp_code, &pqm->reason_code);
 
@@ -630,7 +630,7 @@ VALUE QueueManager_begin(VALUE self)
     PQUEUE_MANAGER pqm;
     Data_Get_Struct(self, QUEUE_MANAGER, pqm);
 
-    if(pqm->trace_level) printf ("WMQ::QueueManager#begin() Queue Manager Handle:%d\n", pqm->hcon);
+    if(pqm->trace_level) printf ("WMQ::QueueManager#begin() Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     pqm->MQBEGIN(pqm->hcon, 0, &pqm->comp_code, &pqm->reason_code);
 
@@ -828,7 +828,7 @@ VALUE QueueManager_put(VALUE self, VALUE hash)
     Message_build(&pqm->p_buffer, &pqm->buffer_size, pqm->trace_level,
                   hash, &pBuffer, &BufferLength,    &md);
 
-    if(pqm->trace_level) printf("WMQ::QueueManager#put Queue Manager Handle:%d\n", pqm->hcon);
+    if(pqm->trace_level) printf("WMQ::QueueManager#put Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     pqm->MQPUT1(
            pqm->hcon,           /* connection handle               */
@@ -1409,7 +1409,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
 #else
     rb_iterate (rb_each, hash, QueueManager_execute_each, (VALUE)pqm);
 #endif
-    if(pqm->trace_level) printf ("WMQ::QueueManager#execute() Queue Manager Handle:%d\n", pqm->hcon);
+    if(pqm->trace_level) printf ("WMQ::QueueManager#execute() Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     pqm->mqExecute(
               pqm->hcon,                              /* MQ connection handle                 */
@@ -1443,7 +1443,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
         pqm->mqCountItems(pqm->reply_bag, MQHA_BAG_HANDLE, &numberOfBags, &pqm->comp_code, &pqm->reason_code);
         CHECK_COMPLETION_CODE("Counting number of bags returned from the command server")
 
-        if(pqm->trace_level > 1) printf("WMQ::QueueManager#execute() %d bags returned\n", numberOfBags);
+        if(pqm->trace_level > 1) printf("WMQ::QueueManager#execute() %ld bags returned\n", (long)numberOfBags);
         array = rb_ary_new2(numberOfBags);
 
         for ( bag_index=0; bag_index<numberOfBags; bag_index++)               /* For each bag, extract the queue depth */
@@ -1456,7 +1456,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
             pqm->mqCountItems(qAttrsBag, MQSEL_ALL_SELECTORS, &number_of_items, &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Counting number of items in this bag")
 
-            if(pqm->trace_level > 1) printf("WMQ::QueueManager#execute() Bag %d contains %d items\n", bag_index, number_of_items);
+            if(pqm->trace_level > 1) printf("WMQ::QueueManager#execute() Bag %d contains %ld items\n", bag_index, (long)number_of_items);
 
             for (items=0; items<number_of_items; items++) /* For each item, extract it's value */
             {
@@ -1479,7 +1479,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
                             CHECK_COMPLETION_CODE("Inquiring Integer item")
 
                             if(pqm->trace_level > 1)
-                                printf("WMQ::QueueManager#execute() Item %d: Integer:%d, selector:%d\n", items, qDepth, selector);
+                                printf("WMQ::QueueManager#execute() Item %d: Integer:%ld, selector:%ld\n", items, (long)qDepth, (long)selector);
 
                             rb_hash_aset(hash, ID2SYM(wmq_selector_id(selector)), LONG2NUM(qDepth));
                         break;
@@ -1488,8 +1488,8 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
                             pqm->mqInquireString(qAttrsBag, MQSEL_ALL_SELECTORS, items, WMQ_EXEC_STRING_INQ_BUFFER_SIZE-1, inquiry_buffer,
                                             &size, NULL, &pqm->comp_code, &pqm->reason_code);
                             if(pqm->trace_level > 2)
-                                printf("WMQ::QueueManager#execute() mqInquireString buffer size: %d, string size:%d\n",
-                                    WMQ_EXEC_STRING_INQ_BUFFER_SIZE,size);
+                                printf("WMQ::QueueManager#execute() mqInquireString buffer size: %d, string size:%ld\n",
+                                    WMQ_EXEC_STRING_INQ_BUFFER_SIZE,(long)size);
                             CHECK_COMPLETION_CODE("Inquiring String item")
 
                             length = 0;
@@ -1508,8 +1508,8 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
                             if(pqm->trace_level > 1)
                             {
                                 inquiry_buffer[length] = '\0';
-                                printf("WMQ::QueueManager#execute() Item %d: String:'%s', selector:%d\n",
-                                        items, inquiry_buffer, selector);
+                                printf("WMQ::QueueManager#execute() Item %d: String:'%s', selector:%ld\n",
+                                        items, inquiry_buffer, (long)selector);
                             }
                         break;
 
@@ -1518,7 +1518,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
                         break;
 
                         default:
-                            printf("Ignoring Unknown type:%d\n", item_type);
+                            printf("Ignoring Unknown type:%ld\n", (long)item_type);
                         break;
                     }
                 }

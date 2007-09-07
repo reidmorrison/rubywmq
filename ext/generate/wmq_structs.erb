@@ -367,7 +367,7 @@ int Message_build_header (VALUE hash, struct Message_build_header_arg* parg)
             *(parg->p_data_offset) += sizeof(<%=struct[:struct]%>);
 
             if(parg->trace_level>2)
-                printf ("WMQ::Message#build_header data offset:%d\n", *(parg->p_data_offset));
+                printf ("WMQ::Message#build_header data offset:%ld\n", (long)(*(parg->p_data_offset)));
 <%      end 
 %>        }
         else

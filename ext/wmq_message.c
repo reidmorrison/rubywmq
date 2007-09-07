@@ -104,7 +104,7 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
             {
                 MQLONG new_size = RSTRING(data)->len + 512; /* Add space for data and a header */
                 if(trace_level>2)
-                    printf ("WMQ::Queue#reallocate Resizing buffer from %d to %d bytes\n", *pq_p_buffer_size, new_size);
+                    printf ("WMQ::Queue#reallocate Resizing buffer from %ld to %ld bytes\n", *pq_p_buffer_size, (long)new_size);
 
                 *pq_p_buffer_size = new_size;
                 free(*pq_pp_buffer);
@@ -158,7 +158,7 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
             }
 
             if(trace_level>2)
-                printf ("WMQ::Queue#put done building headers. Offset is now %d\n", *arg.p_data_offset);
+                printf ("WMQ::Queue#put done building headers. Offset is now %ld\n", *arg.p_data_offset);
 
             memcpy((*pq_pp_buffer) + data_offset, RSTRING(data)->ptr, RSTRING(data)->len);
             *p_total_length = data_offset + RSTRING(data)->len;
@@ -282,7 +282,7 @@ PMQBYTE Message_autogrow_data_buffer(struct Message_build_header_arg* parg, MQLO
         size += 512;                   /* Additional space for subsequent headers */
 
         if(parg->trace_level>2)
-            printf ("WMQ::Message Reallocating buffer from %d to %d\n", *(parg->p_buffer_size), size);
+            printf ("WMQ::Message Reallocating buffer from %ld to %ld\n", *(parg->p_buffer_size), (long)size);
 
         *(parg->p_buffer_size) = size;
         *(parg->pp_buffer) = ALLOC_N(char, size);
@@ -437,10 +437,10 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
     }
 
     if(parg->trace_level>3)
-        printf ("WMQ::Message#build_rf_header Sizeof namevalue string:%d\n", name_value_len);
+        printf ("WMQ::Message#build_rf_header Sizeof namevalue string:%ld\n", (long)name_value_len);
 
     if(parg->trace_level>2)
-        printf ("WMQ::Message#build_rf_header data offset:%d\n", *(parg->p_data_offset));
+        printf ("WMQ::Message#build_rf_header data offset:%ld\n", *(parg->p_data_offset));
 }
 
 static void Message_deblock_rf_header_each_pair(const char *p_name, const char *p_value, void* p_name_value_hash)
@@ -677,6 +677,6 @@ void Message_build_rf_header_2(VALUE hash, struct Message_build_header_arg* parg
     ((PMQRFH)(*(parg->pp_buffer) + rfh2_offset))->StrucLength = *(parg->p_data_offset) - rfh2_offset;
 
     if(parg->trace_level>2)
-        printf ("WMQ::Message#build_rf_header_2 data offset:%d\n", *(parg->p_data_offset));
+        printf ("WMQ::Message#build_rf_header_2 data offset:%ld\n", *(parg->p_data_offset));
 }
 

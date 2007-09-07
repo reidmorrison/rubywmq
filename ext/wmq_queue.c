@@ -436,7 +436,7 @@ VALUE Queue_open(VALUE self)
     pq->hcon = pqm->hcon;                             /* Store Queue Manager handle for subsequent calls */
 
     if(pq->trace_level)
-        printf ("WMQ::Queue#open() Opening Queue:%s, Queue Manager Handle:%d\n", RSTRING(name)->ptr, pq->hcon);
+        printf ("WMQ::Queue#open() Opening Queue:%s, Queue Manager Handle:%ld\n", RSTRING(name)->ptr, (long)pq->hcon);
 
     if(pq->hobj)                                      /* Close queue if already open, ignore errors */
     {
@@ -467,9 +467,9 @@ VALUE Queue_open(VALUE self)
     }
 
     if(pq->trace_level)
-        printf("WMQ::Queue#open() MQOPEN completed with reason:%s, Handle:%d\n",
+        printf("WMQ::Queue#open() MQOPEN completed with reason:%s, Handle:%ld\n",
                wmq_reason(pq->reason_code),
-               pq->hobj);
+               (long)pq->hobj);
 
     if (pq->comp_code == MQCC_FAILED)
     {
@@ -536,7 +536,7 @@ VALUE Queue_close(VALUE self)
         return Qtrue;
     }
 
-    if(pq->trace_level) printf ("WMQ::Queue#close() Queue Handle:%d, Queue Manager Handle:%d\n", pq->hobj, pq->hcon);
+    if(pq->trace_level) printf ("WMQ::Queue#close() Queue Handle:%ld, Queue Manager Handle:%ld\n", (long)pq->hobj, (long)pq->hcon);
 
     pq->MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
 
@@ -736,8 +736,8 @@ VALUE Queue_get(VALUE self, VALUE hash)
 
     WMQ_HASH2MQLONG(hash,match, gmo.MatchOptions)                  /* :match */
 
-    if(pq->trace_level > 1) printf("WMQ::Queue#get() Get Message Option: MatchOptions=%d\n", gmo.MatchOptions);
-    if(pq->trace_level) printf("WMQ::Queue#get() Queue Handle:%d, Queue Manager Handle:%d\n", pq->hobj, pq->hcon);
+    if(pq->trace_level > 1) printf("WMQ::Queue#get() Get Message Option: MatchOptions=%ld\n", (long)gmo.MatchOptions);
+    if(pq->trace_level) printf("WMQ::Queue#get() Queue Handle:%ld, Queue Manager Handle:%ld\n", (long)pq->hobj, (long)pq->hcon);
 
     /* If descriptor is re-used
 
@@ -768,12 +768,12 @@ VALUE Queue_get(VALUE self, VALUE hash)
         /* report reason, if any     */
         if (pq->reason_code != MQRC_NONE)
         {
-            if(pq->trace_level>1) printf("WMQ::Queue#get() Growing buffer size from %d to %d\n", pq->buffer_size, messlen);
+            if(pq->trace_level>1) printf("WMQ::Queue#get() Growing buffer size from %ld to %ld\n", (long)pq->buffer_size, (long)messlen);
             /* TODO: Add support for autogrow buffer here */
             if (pq->reason_code == MQRC_TRUNCATED_MSG_FAILED)
             {
                 if(pq->trace_level>2)
-                    printf ("WMQ::Queue#reallocate Resizing buffer from %d to %d bytes\n", pq->buffer_size, messlen);
+                    printf ("WMQ::Queue#reallocate Resizing buffer from %ld to %ld bytes\n", (long)pq->buffer_size, (long)messlen);
 
                 free(pq->p_buffer);
                 pq->buffer_size = messlen;
@@ -960,7 +960,7 @@ VALUE Queue_put(VALUE self, VALUE hash)
     Message_build(&pq->p_buffer,  &pq->buffer_size, pq->trace_level,
                   hash, &pBuffer, &BufferLength,    &md);
 
-    if(pq->trace_level) printf("WMQ::Queue#put() Queue Handle:%d, Queue Manager Handle:%d\n", pq->hobj, pq->hcon);
+    if(pq->trace_level) printf("WMQ::Queue#put() Queue Handle:%ld, Queue Manager Handle:%ld\n", (long)pq->hobj, (long)pq->hcon);
 
     pq->MQPUT(
           pq->hcon,            /* connection handle               */
@@ -1299,7 +1299,7 @@ VALUE Queue_each(int argc, VALUE *argv, VALUE self)
         }
         rb_hash_aset(hash, ID2SYM(ID_options), LONG2NUM(get_options));
 
-        if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_FIRST set, get options:%d\n", get_options);
+        if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_FIRST set, get options:%ld\n", (long)get_options);
         browse = 1;
     }
 
@@ -1323,7 +1323,7 @@ VALUE Queue_each(int argc, VALUE *argv, VALUE self)
             }
             rb_hash_aset(hash, ID2SYM(ID_options), LONG2NUM(get_options));
 
-            if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_NEXT set, get options:%d\n", get_options);
+            if(pq->trace_level>1) printf("WMQ::Queue#each MQGMO_BROWSE_NEXT set, get options:%ld\n", (long)get_options);
         }
     }
 
