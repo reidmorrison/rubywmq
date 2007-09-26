@@ -203,6 +203,11 @@ void Queue_extract_put_message_options(VALUE hash, PMQPMO ppmo)
         ppmo->Options |= MQPMO_SYNCPOINT;
     }
 
+    IF_TRUE(fail_if_quiescing, 1)                     /* Defaults to true */
+    {
+        ppmo->Options |= MQPMO_FAIL_IF_QUIESCING;
+    }
+
     IF_TRUE(new_id, 0)                                /* :new_id */
     {
         ppmo->Options |= MQPMO_NEW_MSG_ID;
