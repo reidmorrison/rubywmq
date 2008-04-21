@@ -12,12 +12,12 @@
    Building Ruby WMQ on UNIX/Linux
    -------------------------------
    The following is required to build from source code
-   · A ‘C’ compiler
-   · The WebSphere MQ Software development toolkit
+   * A 'C' compiler
+   * The WebSphere MQ Software development toolkit
 
    Extracting the source code package:
-   · unzip package.zip
-   · tar -xvf ‘package.tar
+   * unzip package.zip
+   * tar -xvf package.tar
 
    cd ext/wmq
    Edit the file build.sh and edit the location of WebSphere MQ (if not in /opt/mqm)
@@ -31,8 +31,8 @@
    Building Ruby WMQ on Windows
    ----------------------------
    The following is required to build from source code
-   · The Visual C++ 6.0 compiler
-   · The WebSphere MQ Software development toolkit
+   * The Visual C++ 6.0 compiler
+   * The WebSphere MQ Software development toolkit
 
    cd ext\wmq
    Edit the file build.bat and edit the location of WebSphere MQ

@@ -101,11 +101,14 @@ END_OF_STRING
                               'MQIACH_BYTES_RCVD', 
                               'MQIACH_BUFFERS_RCVD']],
      ['cmqcfc.h', 'MQIAMO_'],
-     ['cmqcfc.h', 'MQIAMO64_'],
+     ['cmqcfc.h', 'MQIAMO64_',  ['MQIAMO64_AVG_Q_TIME',
+                                                    'MQIAMO64_Q_TIME_AVG',
+                                                    'MQIAMO64_Q_TIME_MAX',
+                                                    'MQIAMO64_Q_TIME_MIN']],
 # Integer System Selectors
      ['cmqbc.h', 'MQIASY_'],
 # Character Selectors for Object Attributes
-     ['cmqc.h', 'MQCA_'],
+     ['cmqc.h', 'MQCA_',['MQCA_BASE_OBJECT_NAME']],
      ['cmqcfc.h', 'MQCACF_'],
      ['cmqcfc.h', 'MQCACH_'],
      ['cmqcfc.h', 'MQCAMO_'],
@@ -152,12 +155,15 @@ END_OF_STRING
 # Integer Selectors for Object Attributes
     [['cmqc.h',   'MQIA_'],
      ['cmqcfc.h', 'MQIACF_', ['MQIACF_ERROR_ID',
-                              'MQIACF_QUIESCE']],
+                                              'MQIACF_QUIESCE']],
      ['cmqcfc.h', 'MQIACH_', ['MQIACH_CURRENT_SEQ_NUMBER', 
-                              'MQIACH_BYTES_RCVD', 
-                              'MQIACH_BUFFERS_RCVD']],
+                                              'MQIACH_BYTES_RCVD', 
+                                              'MQIACH_BUFFERS_RCVD']],
      ['cmqcfc.h', 'MQIAMO_'],
-     ['cmqcfc.h', 'MQIAMO64_'],
+     ['cmqcfc.h', 'MQIAMO64_',  ['MQIAMO64_AVG_Q_TIME',
+                                                    'MQIAMO64_Q_TIME_AVG',
+                                                    'MQIAMO64_Q_TIME_MAX',
+                                                    'MQIAMO64_Q_TIME_MIN']],
 # Integer System Selectors
 #     ['cmqbc.h', 'MQIASY_'],
     ].each do |item|
@@ -168,7 +174,7 @@ END_OF_STRING
     end
     str << "\n    *selector_type = MQIT_STRING;\n\n"
 # Character Selectors for Object Attributes
-    [['cmqc.h',   'MQCA_'],
+   [['cmqc.h', 'MQCA_',['MQCA_BASE_OBJECT_NAME']],
      ['cmqcfc.h', 'MQCACF_'],
      ['cmqcfc.h', 'MQCACH_'],
      ['cmqcfc.h', 'MQCAMO_'],

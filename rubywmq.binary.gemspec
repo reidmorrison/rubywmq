@@ -9,7 +9,7 @@ end
 
 spec = Gem::Specification.new do |s|
   s.name = 'rubywmq'
-  s.version = '0.3.0'
+  s.version = '1.0.0'
   s.author = 'Reid Morrison'
   s.email = 'rubywmq@gmail.com'
   s.homepage = 'http://rubywmq.rubyforge.org'
