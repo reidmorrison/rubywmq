@@ -691,6 +691,7 @@ VALUE Queue_get(VALUE self, VALUE hash)
     MQMD     md = {MQMD_DEFAULT};    /* Message Descriptor            */
     MQGMO   gmo = {MQGMO_DEFAULT};   /* get message options           */
 
+    md.Version = MQMD_CURRENT_VERSION;   /* Allow Group Options       */
     gmo.Version = MQGMO_CURRENT_VERSION; /* Allow MatchOptions        */
 
     Check_Type(hash, T_HASH);
@@ -950,6 +951,8 @@ VALUE Queue_put(VALUE self, VALUE hash)
     PQUEUE   pq;
     MQLONG   BufferLength = 0;       /* Length of the message in Buffer */
     PMQVOID  pBuffer = 0;            /* Message data                  */
+
+    md.Version = MQMD_CURRENT_VERSION;   /* Allow Group Options       */
 
     Check_Type(hash, T_HASH);
 
