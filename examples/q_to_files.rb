@@ -17,6 +17,7 @@
 #
 # Example: q_to_files:  Copy all messages in a queue to separate files in a directory
 #
+require 'rubygems'
 require 'find'
 require 'yaml'
 require 'wmq/wmq'

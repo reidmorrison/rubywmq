@@ -17,6 +17,7 @@
 #
 # Sample : put() : Put a message to a queue with a Transmission header
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

@@ -18,6 +18,7 @@
 # Example : files_to_q : Place all files in a directory to a queue
 #          Each file is written as a separate message
 #
+require 'rubygems'
 require 'find'
 require 'yaml'
 require 'wmq/wmq'

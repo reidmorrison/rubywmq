@@ -22,6 +22,7 @@
 #          
 #          A temporary Dynamic Reply To Queue is used with non-persistent messaging
 #
+require 'rubygems'
 require 'wmq'
 
 wait_seconds = 30

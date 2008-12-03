@@ -62,6 +62,7 @@
 #                 - E.g. Database, File etc..
 #             - etc....
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

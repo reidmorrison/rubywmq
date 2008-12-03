@@ -17,6 +17,7 @@
 #
 # Sample : put() : Put a single request message to a queue
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

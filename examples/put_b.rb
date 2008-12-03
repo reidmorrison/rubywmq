@@ -19,6 +19,7 @@
 #          Open the queue so that multiple puts can be performed
 #          Ensure that all messages have the same correlation id
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

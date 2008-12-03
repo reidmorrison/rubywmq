@@ -24,6 +24,7 @@
 # If :connection_name is not present, a WebSphere MQ Server connection will be used
 # I.e. Local server connection
 # 
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(

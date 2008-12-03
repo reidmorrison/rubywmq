@@ -25,6 +25,7 @@
 #   That way the queue would remain after termination of this code.
 #   In this sample the queue will disappear when this program terminates
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

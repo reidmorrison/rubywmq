@@ -19,6 +19,7 @@
 #
 #          Set the correlation id to a text string
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|

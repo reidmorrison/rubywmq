@@ -19,6 +19,7 @@
 #          If no messages are on the queue, the program
 #          completes without waiting
 #
+require 'rubygems'
 require 'wmq/wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
