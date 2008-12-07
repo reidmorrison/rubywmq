@@ -263,9 +263,9 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
                 
             if(memcmp(p_header->StrucId, <%=struct[:struct_id] || "#{struct[:struct].upcase}_STRUC_ID"%>, sizeof(p_header->StrucId)) != 0)
             {
-                break;    /* Bad Message received, do not deblock headers */
                 if(trace_level>1)
                     printf("WMQ::Message#deblock MQFMT_<%=struct[:header].upcase%> received, but message does not contain <%=struct[:struct].upcase%>\n");
+                break;    /* Bad Message received, do not deblock headers */
             }
             else
             {

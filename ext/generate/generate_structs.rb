@@ -28,7 +28,6 @@ class GenerateStructs
   def extract_struct (filename, struct_name)
     properties_list = []
     line_number = 0
-    group_name = nil
     found = false
     File.open(filename) do |file|
       file.each do |line|
@@ -40,7 +39,6 @@ class GenerateStructs
             found = true if line =~ /^\s*struct\s*tag#{struct_name}/
           else
             return(properties_list) if line =~ /^\s*\};/
-            #puts line
             match = /\s*(MQ\w+)\s+(\w+);/.match(line)
             if match
               type = match[1]
