@@ -297,4 +297,32 @@ class TestTest < Test::Unit::TestCase
               ]
     verify_multiple_headers(headers, WMQ::MQFMT_STRING)
   end
+  
+  def test_message_grouping
+    puts '****** test_message_grouping ******'
+    # Clear out queue of any messages
+    @in_queue.each { |message| }
+    
+    msg = WMQ::Message.new
+    msg.data = 'First'
+    msg.descriptor[:msg_flags] = WMQ::MQMF_MSG_IN_GROUP
+    assert_equal(@out_queue.put(:message=>msg, :options => WMQ::MQPMO_LOGICAL_ORDER), true)
+    
+    msg.data = 'Second'
+    assert_equal(@out_queue.put(:message=>msg, :options => WMQ::MQPMO_LOGICAL_ORDER), true)
+    
+    msg.data = 'Last'
+    msg.descriptor[:msg_flags] = WMQ::MQMF_LAST_MSG_IN_GROUP
+    assert_equal(@out_queue.put(:message=>msg, :options => WMQ::MQPMO_LOGICAL_ORDER), true)
+
+    # Now retrieve the messages destructively
+    message = WMQ::Message.new
+    test_sizes.each do |size|
+      assert_equal(true, @in_queue.get(:message=>message, :match=>WMQ::MQMO_NONE))
+      assert_equal(size, message.data.length)
+      str = '0123456789ABCDEF' * (size/16) + '0123456789ABCDEF'[0,size%16]
+      assert_equal(str, message.data)
+    end
+  end
+  
 end
