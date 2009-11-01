@@ -1,0 +1,9 @@
+ext/wmq_structs.c
+ext/Makefile
+ext/lib/wmq_const.rb
+ext/lib/wmq_const_admin.rb
+ext/wmq_reason.c
+ext/*.o
+ext/wmq.so
+nbproject/private/*
+rubywmq*.gem
