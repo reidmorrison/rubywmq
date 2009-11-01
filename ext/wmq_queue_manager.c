@@ -234,7 +234,7 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
     else
     {
         rb_iv_set(self, "@name", val);
-        if(pqm->trace_level > 1) printf("WMQ::QueueManager#initialize() Queue Manager:%s\n", RSTRING(val)->ptr);
+        if(pqm->trace_level > 1) printf("WMQ::QueueManager#initialize() Queue Manager:%s\n", RSTRING_PTR(val));
     }
 
     WMQ_HASH2BOOL(hash,exception_on_error, pqm->exception_on_error)
@@ -291,18 +291,18 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
         if (!NIL_P(val))
         {
             str = StringValue(val);
-            length = RSTRING(str)->len;
+            length = RSTRING_LEN(str);
 
             if (length > 0)
             {
                 MQPTR pBuffer;
                 if(pqm->trace_level > 1)
                     printf("WMQ::QueueManager#initialize() Setting long_remote_user_id:%s\n",
-                        RSTRING(str)->ptr);
+                        RSTRING_PTR(str));
 
                 /* Include null at end of string */
                 pBuffer = ALLOC_N(char, length+1);
-                memcpy(pBuffer, RSTRING(str)->ptr, length+1);
+                memcpy(pBuffer, RSTRING_PTR(str), length+1);
 
                 pmqcd->LongRemoteUserIdLength = length;
                 pmqcd->LongRemoteUserIdPtr    = pBuffer;
@@ -317,18 +317,18 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
         if (!NIL_P(val))
         {
             str = StringValue(val);
-            length = RSTRING(str)->len;
+            length = RSTRING_LEN(str);
 
             if (length > 0)
             {
                 MQPTR pBuffer;
                 if(pqm->trace_level > 1)
                     printf("WMQ::QueueManager#initialize() Setting ssl_peer_name:%s\n",
-                        RSTRING(str)->ptr);
+                        RSTRING_PTR(str));
 
                 /* Include null at end of string */
                 pBuffer = ALLOC_N(char, length+1);
-                memcpy(pBuffer, RSTRING(str)->ptr, length+1);
+                memcpy(pBuffer, RSTRING_PTR(str), length+1);
 
                 pmqcd->SSLPeerNameLength = length;
                 pmqcd->SSLPeerNamePtr    = pBuffer;
@@ -401,18 +401,18 @@ VALUE QueueManager_connect(VALUE self)
     name = StringValue(name);
 
     if(pqm->trace_level)
-        printf("WMQ::QueueManager#connect() Connect to Queue Manager:%s\n", RSTRING(name)->ptr);
+        printf("WMQ::QueueManager#connect() Connect to Queue Manager:%s\n", RSTRING_PTR(name));
 
     if (pqm->hcon)                                    /* Disconnect from qmgr if already connected, ignore errors */
     {
         if(pqm->trace_level)
-            printf("WMQ::QueueManager#connect() Already connected to Queue Manager:%s, Disconnecting first!\n", RSTRING(name)->ptr);
+            printf("WMQ::QueueManager#connect() Already connected to Queue Manager:%s, Disconnecting first!\n", RSTRING_PTR(name));
 
         pqm->MQDISC(&pqm->hcon, &pqm->comp_code, &pqm->reason_code);
     }
 
     pqm->MQCONNX(
-            RSTRING(name)->ptr,      /* queue manager                  */
+            RSTRING_PTR(name),      /* queue manager                  */
             &pqm->connect_options,   /* Connection Options             */
             &pqm->hcon,              /* connection handle              */
             &pqm->comp_code,         /* completion code                */
@@ -431,7 +431,7 @@ VALUE QueueManager_connect(VALUE self)
         {
             rb_raise(wmq_exception,
                      "WMQ::QueueManager#connect(). Error connecting to Queue Manager:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pqm->reason_code));
         }
 
@@ -484,7 +484,7 @@ VALUE QueueManager_disconnect(VALUE self)
 
                 rb_raise(wmq_exception,
                          "WMQ::QueueManager#disconnect(). Error disconnecting from Queue Manager:%s, reason:%s",
-                         RSTRING(name)->ptr,
+                         RSTRING_PTR(name),
                          wmq_reason(pqm->reason_code));
             }
 
@@ -543,7 +543,7 @@ VALUE QueueManager_commit(VALUE self)
 
             rb_raise(wmq_exception,
                      "WMQ::QueueManager#commit(). Error commiting changes to Queue Manager:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pqm->reason_code));
         }
         return Qfalse;
@@ -595,7 +595,7 @@ VALUE QueueManager_backout(VALUE self)
 
             rb_raise(wmq_exception,
                      "WMQ::QueueManager#backout(). Error backing out changes to Queue Manager:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pqm->reason_code));
         }
         return Qfalse;
@@ -645,7 +645,7 @@ VALUE QueueManager_begin(VALUE self)
 
             rb_raise(wmq_exception,
                      "WMQ::QueueManager#begin(). Error starting unit of work on Queue Manager:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pqm->reason_code));
         }
         return Qfalse;
@@ -850,8 +850,8 @@ VALUE QueueManager_put(VALUE self, VALUE hash)
 
             rb_raise(wmq_exception,
                      "WMQ::QueueManager.put(). Error writing a message to Queue:%s on Queue Manager:%s reason:%s",
-                     RSTRING(q_name)->ptr,
-                     RSTRING(qmgr_name)->ptr,
+                     RSTRING_PTR(q_name),
+                     RSTRING_PTR(qmgr_name),
                      wmq_reason(pqm->reason_code));
         }
         return Qfalse;
@@ -1247,15 +1247,8 @@ if(pqm->comp_code != MQCC_OK)                                                   
     return Qfalse;                                                                        \
 }
 
-#if RUBY_VERSION_CODE > 183
 static int QueueManager_execute_each (VALUE key, VALUE value, PQUEUE_MANAGER pqm)
 {
-#else
-static int QueueManager_execute_each (VALUE array, PQUEUE_MANAGER pqm)
-{
-    VALUE key   = rb_ary_shift(array);
-    VALUE value = rb_ary_shift(array);
-#endif
     MQLONG selector_type, selector;
     VALUE  str;
     ID selector_id = rb_to_id(key);
@@ -1263,7 +1256,7 @@ static int QueueManager_execute_each (VALUE array, PQUEUE_MANAGER pqm)
     if(pqm->trace_level > 1)
     {
         str = rb_funcall(key, rb_intern("to_s"), 0);
-        printf ("WMQ::QueueManager#execute_each Key:%s\n", RSTRING(str)->ptr);
+        printf ("WMQ::QueueManager#execute_each Key:%s\n", RSTRING_PTR(str));
     }
 
     if (ID_command == selector_id)                    // Skip :command
@@ -1298,7 +1291,7 @@ static int QueueManager_execute_each (VALUE array, PQUEUE_MANAGER pqm)
 
         case MQIT_STRING:
             str = StringValue(value);
-            pqm->mqAddString(pqm->admin_bag, selector, MQBL_NULL_TERMINATED, RSTRING(str)->ptr, &pqm->comp_code, &pqm->reason_code);
+            pqm->mqAddString(pqm->admin_bag, selector, MQBL_NULL_TERMINATED, RSTRING_PTR(str), &pqm->comp_code, &pqm->reason_code);
             CHECK_COMPLETION_CODE("Adding Queue name to the admin bag")
         break;
 
@@ -1404,11 +1397,7 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
     {
         rb_raise(rb_eArgError, "WMQ::QueueManager#execute Mandatory parameter :command missing");
     }
-#if RUBY_VERSION_CODE > 183
     rb_hash_foreach(hash, QueueManager_execute_each, (VALUE)pqm);
-#else
-    rb_iterate (rb_each, hash, QueueManager_execute_each, (VALUE)pqm);
-#endif
     if(pqm->trace_level) printf ("WMQ::QueueManager#execute() Queue Manager Handle:%ld\n", (long)pqm->hcon);
 
     pqm->mqExecute(
@@ -1560,14 +1549,14 @@ VALUE QueueManager_execute(VALUE self, VALUE hash)
             {
                 rb_raise(wmq_exception,
                         "WMQ::QueueManager#execute(). Please start the WebSphere MQ Command Server : 'strmqcsv %s', reason:%s",
-                        RSTRING(name)->ptr,
+                        RSTRING_PTR(name),
                         wmq_reason(pqm->reason_code));
             }
             else
             {
                 rb_raise(wmq_exception,
                         "WMQ::QueueManager#execute(). Error executing admin command on Queue Manager:%s, reason:%s",
-                        RSTRING(name)->ptr,
+                        RSTRING_PTR(name),
                         wmq_reason(pqm->reason_code));
             }
         }

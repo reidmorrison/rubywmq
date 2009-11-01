@@ -167,15 +167,8 @@ void Message_from_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* <%=var
       end 
 %>}
 
-#if RUBY_VERSION_CODE > 183
 static int Message_to_<%=struct_name.downcase%>_each (VALUE key, VALUE value, <%=struct_name%>* p<%=struct_name.downcase%>)
 {
-#else
-static int Message_to_<%=struct_name.downcase%>_each (VALUE array, <%=struct_name%>* p<%=struct_name.downcase%>)
-{
-    VALUE key   = rb_ary_shift(array);
-    VALUE value = rb_ary_shift(array);
-#endif
     VALUE str;
     size_t size;
     size_t length; 
@@ -207,18 +200,12 @@ static int Message_to_<%=struct_name.downcase%>_each (VALUE array, <%=struct_nam
 %><%=struct[:header]?" if(id != ID_header_type)":""%><%
       if contains 
 %> {
-#if RUBY_VERSION_CODE > 183
       Message_to_<%= contains%>_each(key, value, &pmqxqh->MsgDesc); 
-#else
-      rb_ary_push(array, key);
-      rb_ary_push(array, value);
-      Message_to_<%= contains%>_each(array, &pmqxqh->MsgDesc); 
-#endif
    }<%
       else%>
     {
         val = rb_funcall(key, ID_to_s, 0);
-        rb_raise(rb_eArgError, "WMQ::Message#to_<%=struct_name.downcase%> Unknown symbol :%s supplied", RSTRING(val)->ptr);
+        rb_raise(rb_eArgError, "WMQ::Message#to_<%=struct_name.downcase%> Unknown symbol :%s supplied", RSTRING_PTR(val));
     }
 <%    end%>
     return 0;
@@ -226,11 +213,7 @@ static int Message_to_<%=struct_name.downcase%>_each (VALUE array, <%=struct_nam
 
 void Message_to_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* p<%=struct_name.downcase%>)
 {
-#if RUBY_VERSION_CODE > 183
     rb_hash_foreach(hash, Message_to_<%=struct_name.downcase%>_each, (VALUE)p<%=struct_name.downcase%>);
-#else
-    rb_iterate (rb_each, hash, Message_to_<%=struct_name.downcase%>_each, (VALUE)p<%=struct_name.downcase%>);
-#endif
 }
 <%  end # wmq_structs.each 
 %>

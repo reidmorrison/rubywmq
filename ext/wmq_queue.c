@@ -173,14 +173,14 @@ static MQLONG Queue_extract_open_options(VALUE hash, VALUE name)
         {
             rb_raise(rb_eArgError,
                      "Unknown mode supplied for Queue:%s",
-                     RSTRING(name)->ptr);
+                     RSTRING_PTR(name));
         }
     }
     else if (!mq_open_options)
     {
         rb_raise(rb_eArgError,
                  "Either :mode or :options is required. Both are missing from hash passed to initialize() for Queue: %s",
-                 RSTRING(name)->ptr);
+                 RSTRING_PTR(name));
     }
 
     IF_TRUE(fail_if_quiescing, 1)                     /* Defaults to true */
@@ -306,7 +306,7 @@ VALUE Queue_initialize(VALUE self, VALUE hash)
 
     str = StringValue(q_name);
     rb_iv_set(self, "@original_name", str);           /* Store original queue name */
-    strncpy(pq->q_name, RSTRING(str)->ptr, sizeof(pq->q_name));
+    strncpy(pq->q_name, RSTRING_PTR(str), sizeof(pq->q_name));
 
     pq->open_options = Queue_extract_open_options(hash, q_name);
 
@@ -418,14 +418,14 @@ VALUE Queue_open(VALUE self)
     }
     name = StringValue(name);
 
-    strncpy(od.ObjectName, RSTRING(name)->ptr, (size_t)MQ_Q_NAME_LENGTH);
+    strncpy(od.ObjectName, RSTRING_PTR(name), (size_t)MQ_Q_NAME_LENGTH);
 
     dynamic_q_name = rb_iv_get(self,"@dynamic_q_name");
     if (!NIL_P(dynamic_q_name))
     {
         val = StringValue(dynamic_q_name);
-        strncpy(od.DynamicQName, RSTRING(dynamic_q_name)->ptr, (size_t) MQ_Q_NAME_LENGTH);
-        if(pq->trace_level>1) printf("WMQ::Queue#open() Using dynamic queue name:%s\n", RSTRING(dynamic_q_name)->ptr);
+        strncpy(od.DynamicQName, RSTRING_PTR(dynamic_q_name), (size_t) MQ_Q_NAME_LENGTH);
+        if(pq->trace_level>1) printf("WMQ::Queue#open() Using dynamic queue name:%s\n", RSTRING_PTR(dynamic_q_name));
     }
 
     queue_manager = rb_iv_get(self,"@queue_manager");
@@ -441,12 +441,12 @@ VALUE Queue_open(VALUE self)
     pq->hcon = pqm->hcon;                             /* Store Queue Manager handle for subsequent calls */
 
     if(pq->trace_level)
-        printf ("WMQ::Queue#open() Opening Queue:%s, Queue Manager Handle:%ld\n", RSTRING(name)->ptr, (long)pq->hcon);
+        printf ("WMQ::Queue#open() Opening Queue:%s, Queue Manager Handle:%ld\n", RSTRING_PTR(name), (long)pq->hcon);
 
     if(pq->hobj)                                      /* Close queue if already open, ignore errors */
     {
         if(pq->trace_level)
-            printf ("WMQ::Queue#open() Queue:%s Already open, closing it!\n", RSTRING(name)->ptr);
+            printf ("WMQ::Queue#open() Queue:%s Already open, closing it!\n", RSTRING_PTR(name));
 
         pqm->MQCLOSE(pq->hcon, &pq->hobj, pq->close_options, &pq->comp_code, &pq->reason_code);
     }
@@ -466,7 +466,7 @@ VALUE Queue_open(VALUE self)
 
         if(pq->trace_level)
             printf("WMQ::Queue#open() Queue already exists, re-trying with queue name:%s\n",
-                   RSTRING(dynamic_q_name)->ptr);
+                   RSTRING_PTR(dynamic_q_name));
 
         pqm->MQOPEN(pq->hcon, &od, pq->open_options, &pq->hobj, &pq->comp_code, &pq->reason_code);
     }
@@ -488,7 +488,7 @@ VALUE Queue_open(VALUE self)
 
             rb_raise(wmq_exception,
                      "WMQ::Queue#open(). Error opening Queue:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pq->reason_code));
         }
         return Qfalse;
@@ -503,7 +503,7 @@ VALUE Queue_open(VALUE self)
         WMQ_MQCHARS2STR(od.ObjectName, val)
         rb_iv_set(self, "@name", val);                /* Store actual queue name E.g. Dynamic Queue */
 
-        if(pq->trace_level>1) printf("WMQ::Queue#open() Actual Queue Name opened:%s\n", RSTRING(val)->ptr);
+        if(pq->trace_level>1) printf("WMQ::Queue#open() Actual Queue Name opened:%s\n", RSTRING_PTR(val));
     }
 
     /* Future Use:
@@ -558,7 +558,7 @@ VALUE Queue_close(VALUE self)
 
             rb_raise(wmq_exception,
                      "WMQ::Queue#close(). Error closing Queue:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pq->reason_code));
         }
         return Qfalse;
@@ -711,7 +711,7 @@ VALUE Queue_get(VALUE self, VALUE hash)
 
         rb_raise(rb_eArgError,
                  "Mandatory key :message is missing from hash passed to get() for Queue: %s",
-                 RSTRING(name)->ptr);
+                 RSTRING_PTR(name));
     }
 
     Message_build_mqmd(message, &md);
@@ -809,7 +809,7 @@ VALUE Queue_get(VALUE self, VALUE hash)
 
             rb_raise(wmq_exception,
                      "WMQ::Queue#get(). Error reading a message from Queue:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pq->reason_code));
         }
         return Qfalse;
@@ -990,7 +990,7 @@ VALUE Queue_put(VALUE self, VALUE hash)
 
             rb_raise(wmq_exception,
                      "WMQ::Queue#put(). Error writing a message to Queue:%s, reason:%s",
-                     RSTRING(name)->ptr,
+                     RSTRING_PTR(name),
                      wmq_reason(pq->reason_code));
         }
         return Qfalse;

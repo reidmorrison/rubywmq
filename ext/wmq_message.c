@@ -62,8 +62,8 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
     if(!NIL_P(data))
     {
         Check_Type(data, T_STRING);
-        *p_total_length = RSTRING(data)->len;
-        *pp_buffer      = RSTRING(data)->ptr;
+        *p_total_length = RSTRING_LEN(data);
+        *pp_buffer      = RSTRING_PTR(data);
     }
 
     /* :message is optional */
@@ -100,9 +100,9 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
                 printf ("WMQ::Queue#put %ld Header(s) supplied\n", NUM2LONG(rb_funcall(headers, ID_size, 0)));
 
             /* First sanity check: Do we even have enough space for the data being written and a small header */
-            if(RSTRING(data)->len + 128 >= *pq_p_buffer_size)
+            if(RSTRING_LEN(data) + 128 >= *pq_p_buffer_size)
             {
-                MQLONG new_size = RSTRING(data)->len + 512; /* Add space for data and a header */
+                MQLONG new_size = RSTRING_LEN(data) + 512; /* Add space for data and a header */
                 if(trace_level>2)
                     printf ("WMQ::Queue#reallocate Resizing buffer from %ld to %ld bytes\n", *pq_p_buffer_size, (long)new_size);
 
@@ -113,16 +113,16 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
 
             arg.pp_buffer      = pq_pp_buffer;
             arg.p_buffer_size  = pq_p_buffer_size;
-            arg.data_length    = RSTRING(data)->len;
+            arg.data_length    = RSTRING_LEN(data);
             arg.p_data_offset  = &data_offset;
             arg.trace_level    = trace_level;
             arg.next_header_id = 0;
             arg.data_format    = pmqmd->Format;
 
             if(trace_level>2)
-                printf ("WMQ::Queue#put Building %ld headers.\n", RARRAY(headers)->len);
+                printf ("WMQ::Queue#put Building %ld headers.\n", RARRAY_LEN(headers));
 
-            for(index = 0; index < RARRAY(headers)->len; index++)
+            for(index = 0; index < RARRAY_LEN(headers); index++)
             {
                 /*
                  * Look at the next Header so that this header can set it's format
@@ -160,14 +160,14 @@ void Message_build(PMQBYTE* pq_pp_buffer, PMQLONG pq_p_buffer_size, MQLONG trace
             if(trace_level>2)
                 printf ("WMQ::Queue#put done building headers. Offset is now %ld\n", *arg.p_data_offset);
 
-            memcpy((*pq_pp_buffer) + data_offset, RSTRING(data)->ptr, RSTRING(data)->len);
-            *p_total_length = data_offset + RSTRING(data)->len;
+            memcpy((*pq_pp_buffer) + data_offset, RSTRING_PTR(data), RSTRING_LEN(data));
+            *p_total_length = data_offset + RSTRING_LEN(data);
             *pp_buffer      = *pq_pp_buffer;
         }
         else
         {
-            *p_total_length = RSTRING(data)->len;
-            *pp_buffer      = RSTRING(data)->ptr;
+            *p_total_length = RSTRING_LEN(data);
+            *pp_buffer      = RSTRING_PTR(data);
         }
     }
     /* If :message is not supplied, then :data must be supplied in the parameter list */
@@ -298,14 +298,14 @@ PMQBYTE Message_autogrow_data_buffer(struct Message_build_header_arg* parg, MQLO
 static void Message_name_value_concat(VALUE string, VALUE element)
 {
     VALUE str = StringValue(element);
-    if (RSTRING(str)->len == 0)                       /* Empty String: "" */
+    if (RSTRING_LEN(str) == 0)                       /* Empty String: "" */
     {
         rb_str_concat(string, rb_str_new2("\"\""));
     }
     else
     {
-        void*  contains_spaces = memchr(RSTRING(str)->ptr,' ',RSTRING(str)->len);
-        void*  contains_dbl_quotes = memchr(RSTRING(str)->ptr,'"',RSTRING(str)->len);
+        void*  contains_spaces = memchr(RSTRING_PTR(str),' ',RSTRING_LEN(str));
+        void*  contains_dbl_quotes = memchr(RSTRING_PTR(str),'"',RSTRING_LEN(str));
 
         if(contains_spaces == NULL && contains_dbl_quotes == NULL)
         {
@@ -344,15 +344,8 @@ static VALUE Message_build_rf_header_each_value(VALUE value, struct Message_buil
     return Qnil;
 }
 
-#if RUBY_VERSION_CODE > 183
 static int Message_build_rf_header_each (VALUE key, VALUE value, VALUE string)
 {
-#else
-static int Message_build_rf_header_each (VALUE array, VALUE string)
-{
-    VALUE key   = rb_ary_shift(array);
-    VALUE value = rb_ary_shift(array);
-#endif
     VALUE space = rb_str_new2(" ");
     /* If Value is an Array, need to repeat name for each value */
     if (TYPE(value) == T_ARRAY)
@@ -392,11 +385,7 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
         if (TYPE(name_value) == T_HASH)
         {
             VALUE name_value_str = rb_str_buf_new(512);         /* Allocate 512 char buffer, will grow as needed */
-#if RUBY_VERSION_CODE > 183
             rb_hash_foreach(name_value, Message_build_rf_header_each, name_value_str);
-#else
-            rb_iterate (rb_each, name_value, Message_build_rf_header_each, name_value_str);
-#endif
             name_value = name_value_str;
         }
         else if(TYPE(name_value) != T_STRING)
@@ -404,13 +393,13 @@ void Message_build_rf_header (VALUE hash, struct Message_build_header_arg* parg)
             rb_raise(rb_eArgError, ":name_value supplied in rf_header to WMQ::Message#headers must be either a String or a Hash");
         }
 
-        name_value_len = RSTRING(name_value)->len;
+        name_value_len = RSTRING_LEN(name_value);
         if (name_value_len % 4)                           /* Not on 4 byte boundary ? */
         {
             rb_str_concat(name_value, rb_str_new("    ", 4 - (name_value_len % 4)));
-            name_value_len = RSTRING(name_value)->len;
+            name_value_len = RSTRING_LEN(name_value);
         }
-        p_name_value   = RSTRING(name_value)->ptr;
+        p_name_value   = RSTRING_PTR(name_value);
     }
 
     p_data = Message_autogrow_data_buffer(parg, sizeof(MQRFH)+name_value_len);
@@ -578,7 +567,7 @@ MQLONG Message_deblock_rf_header_2 (VALUE hash, PMQBYTE p_buffer, MQLONG data_le
 static VALUE Message_build_rf_header_2_each(VALUE element, struct Message_build_header_arg* parg)
 {
     VALUE  str = StringValue(element);
-    MQLONG length = RSTRING(str)->len;
+    MQLONG length = RSTRING_LEN(str);
 
     if (length % 4)                           /* Not on 4 byte boundary ? */
     {
@@ -589,7 +578,7 @@ static VALUE Message_build_rf_header_2_each(VALUE element, struct Message_build_
 
         memcpy(p_data, (void*) &len, sizeof(len));    /* Start with MQLONG length indicator */
         p_data += sizeof(len);
-        memcpy(p_data, RSTRING(str)->ptr, length);
+        memcpy(p_data, RSTRING_PTR(str), length);
         p_data += length;
         memcpy(p_data, blanks, pad);
         p_data += pad;
@@ -601,7 +590,7 @@ static VALUE Message_build_rf_header_2_each(VALUE element, struct Message_build_
 
         memcpy(p_data, (void*) &length, sizeof(length));  /* Start with MQLONG length indicator */
         p_data += sizeof(length);
-        memcpy(p_data, RSTRING(str)->ptr, length);
+        memcpy(p_data, RSTRING_PTR(str), length);
         p_data += length;
         *(parg->p_data_offset) += sizeof(length) + length;
     }

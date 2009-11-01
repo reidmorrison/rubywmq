@@ -1,5 +1,5 @@
 == Description
-   rubywmq - Ruby WMQ is a Ruby interface into WebSphere MQ, previously called MQSeries
+   rubywmq - RubyWMQ is a Ruby interface into WebSphere MQ, previously called MQSeries
 
 == Synopsis
    require 'wmq'

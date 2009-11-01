@@ -15,7 +15,24 @@
  * --------------------------------------------------------------------------*/
 
 #include <ruby.h>
-#include <version.h>
+
+/* New with Ruby 1.9, define for prior Ruby versions */
+#ifndef RSTRING_PTR
+   #define RSTRING_PTR(str) RSTRING(str)->ptr
+#endif
+#ifndef RSTRING_LEN
+   #define RSTRING_LEN(str) RSTRING(str)->len
+#endif
+#ifndef RARRAY_PTR
+   #define RARRAY_PTR(ary) RARRAY(ary)->ptr
+#endif
+#ifndef RARRAY_LEN
+   #define RARRAY_LEN(ary) RARRAY(ary)->len
+#endif
+#ifndef HAVE_RB_STR_SET_LEN
+   #define rb_str_set_len(str, length) (RSTRING_LEN(str) = (length))
+#endif
+
 #include <cmqc.h>
 #include <cmqxc.h>
 
@@ -231,21 +248,21 @@ void   wmq_selector(ID selector_id, PMQLONG selector_type, PMQLONG selector);
 
 #define WMQ_STR2MQCHARS(STR,ELEMENT)            \
     str = StringValue(STR);                     \
-    length = RSTRING(STR)->len;                 \
+    length = RSTRING_LEN(STR);                 \
     size = sizeof(ELEMENT);                     \
-    strncpy(ELEMENT, RSTRING(STR)->ptr, length > size ? size : length);
+    strncpy(ELEMENT, RSTRING_PTR(STR), length > size ? size : length);
 
 #define WMQ_STR2MQBYTES(STR,ELEMENT)                \
     str = StringValue(STR);                         \
-    length = RSTRING(str)->len;                     \
+    length = RSTRING_LEN(str);                     \
     size = sizeof(ELEMENT);                         \
     if (length >= size)                             \
     {                                               \
-        memcpy(ELEMENT, RSTRING(str)->ptr, size);   \
+        memcpy(ELEMENT, RSTRING_PTR(str), size);   \
     }                                               \
     else                                            \
     {                                               \
-        memcpy(ELEMENT, RSTRING(str)->ptr, length); \
+        memcpy(ELEMENT, RSTRING_PTR(str), length); \
         memset(ELEMENT+length, 0, size-length);     \
     }
 
