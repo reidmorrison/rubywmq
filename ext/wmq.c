@@ -1,5 +1,5 @@
 /*
- *  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
+ *  Copyright 2006 J. Reid Morrison
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -80,9 +80,6 @@ void Init_wmq() {
     QueueManager_selector_id_init();
     QueueManager_command_id_init();
     wmq_structs_id_init();
-
-    rb_require("wmq/wmq_temp");
-    rb_require("wmq/wmq_const");
 }
 
 /*

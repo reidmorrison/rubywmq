@@ -1,15 +1,14 @@
-# Shift include path to use locally built copy of rubywmq - For testing dev builds only
-#$:.unshift '../lib'
+# Allow test to be run in-place without requiring a gem install
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
 
 require 'rubygems'
-require 'wmq/wmq'
-require 'wmq/wmq_const_admin'
+require 'wmq'
 require 'test/unit'
 class TestTest < Test::Unit::TestCase
 
   def setup
     puts '****** setup: start ******'
-    @queue_manager = WMQ::QueueManager.new(:q_mgr_name => 'REID') #, :connection_name=>'localhost(1414)')
+    @queue_manager = WMQ::QueueManager.new(:q_mgr_name => 'TEST') #, :connection_name=>'localhost(1414)')
     @queue_manager.connect
 
     # Create Queue and clear any messages from the queue
@@ -161,7 +160,7 @@ class TestTest < Test::Unit::TestCase
       count = count + 1
     end
   end
-  
+
   def test_dlh
     puts '****** test_dlh ******'
     dlh = {:header_type     =>:dead_letter_header,
@@ -205,7 +204,7 @@ class TestTest < Test::Unit::TestCase
             }
     verify_header(cics, WMQ::MQFMT_NONE)
   end
-  
+
   def test_ims
     puts '****** test_ims ******'
     ims = {:header_type      =>:ims,
@@ -214,7 +213,7 @@ class TestTest < Test::Unit::TestCase
           }
     verify_header(ims, WMQ::MQFMT_STRING)
   end
-  
+
   def test_transmission_header
     puts '****** test_transmission_header ******'
     xqh = {:header_type     =>:xmit_q_header,
@@ -225,45 +224,45 @@ class TestTest < Test::Unit::TestCase
           }
     verify_header(xqh, WMQ::MQFMT_STRING)
   end
-  
+
   def test_rf_header
     puts '****** test_rf_header ******'
     rfh = {:header_type =>:rf_header,
-           :name_value  => {' name   s' => '  v a "l" u e 1  ', 
-                            'n a m e 2 ' => 'v a l u e  2', 
+           :name_value  => {' name   s' => '  v a "l" u e 1  ',
+                            'n a m e 2 ' => 'v a l u e  2',
                             '' => ['"', '""', '"""', '""""', ''],
                             'name3'=>['"value3"', '', '"',' value 43"']},
           }
     verify_header(rfh, WMQ::MQFMT_STRING)
   end
-  
+
   def test_rf_header_2
     puts '****** test_rf_header_2 ******'
     rfh2 = {:header_type =>:rf_header_2,
-            :xml => ['<hello>to the world</hello>', 
+            :xml => ['<hello>to the world</hello>',
                      '<another>xml like string</another>'],
            }
     verify_header(rfh2, WMQ::MQFMT_STRING)
   end
-  
+
   def test_multiple_headers
     puts '****** test_multiple_headers ******'
     headers = [{:header_type      => :rf_header_2,
-                :xml              => ['<hello>to the world</hello>', 
+                :xml              => ['<hello>to the world</hello>',
                                       '<another>xml like string</another>'],},
-                
+
                {:header_type      => :rf_header,
-                :name_value       => {' name   s' => '  v a l u e 1  ', 
-                                      'n a m e 2 ' => 'v a l u e  2', 
+                :name_value       => {' name   s' => '  v a l u e 1  ',
+                                      'n a m e 2 ' => 'v a l u e  2',
                                       'name3'=>['value3', '', 'value 43']} },
-                
+
                {:header_type      => :ims,
                 :l_term_override  => 'LTERM',
                 :reply_to_format  => WMQ::MQFMT_STRING},
-                
+
                {:header_type      => :rf_header,
-                :name_value       => {' name   s' => '  v a l u e 1  ', 
-                                      'n a m e 2 ' => 'v a l u e  2', 
+                :name_value       => {' name   s' => '  v a l u e 1  ',
+                                      'n a m e 2 ' => 'v a l u e  2',
                                       'name3'=>['value3', '', 'value 43']} },
 
                {:header_type      => :cics,
@@ -273,16 +272,16 @@ class TestTest < Test::Unit::TestCase
 
                {:header_type      => :rf_header_2,
                 :xml              => ['<hello>to the world</hello>', '<another>xml like string</another>'],},
-                
+
                {:header_type      => :xmit_q_header,
                 :remote_q_name    => 'SOME_REMOTE_QUEUE',
                 :remote_q_mgr_name=> 'SOME_REMOTE_Q_MGR',
                 :msg_type         => WMQ::MQMT_REQUEST,
                 :msg_id           => 'my message Id'},
-              ]              
+              ]
     verify_multiple_headers(headers, WMQ::MQFMT_STRING)
   end
-  
+
   def test_xmit_multiple_headers
     puts '****** test_xmit_q_header with ims header ******'
     headers = [{:header_type      => :xmit_q_header,
@@ -290,27 +289,27 @@ class TestTest < Test::Unit::TestCase
                 :remote_q_mgr_name=> 'SOME_REMOTE_Q_MGR',
                 :msg_type         => WMQ::MQMT_REQUEST,
                 :msg_id           => 'my message Id'},
-                
+
                {:header_type      => :ims,
                 :l_term_override  => 'LTERM',
                 :reply_to_format  => WMQ::MQFMT_STRING},
               ]
     verify_multiple_headers(headers, WMQ::MQFMT_STRING)
   end
-  
+
   def test_message_grouping
     puts '****** test_message_grouping ******'
     # Clear out queue of any messages
     @in_queue.each { |message| }
-    
+
     msg = WMQ::Message.new
     msg.data = 'First'
     msg.descriptor[:msg_flags] = WMQ::MQMF_MSG_IN_GROUP
     assert_equal(@out_queue.put(:message=>msg, :options => WMQ::MQPMO_LOGICAL_ORDER), true)
-    
+
     msg.data = 'Second'
     assert_equal(@out_queue.put(:message=>msg, :options => WMQ::MQPMO_LOGICAL_ORDER), true)
-    
+
     msg.data = 'Last'
     msg.descriptor[:msg_flags] = WMQ::MQMF_LAST_MSG_IN_GROUP
     assert_equal(@out_queue.put(:message=>msg, :options => WMQ::MQPMO_LOGICAL_ORDER), true)
@@ -324,5 +323,5 @@ class TestTest < Test::Unit::TestCase
       assert_equal(str, message.data)
     end
   end
-  
+
 end

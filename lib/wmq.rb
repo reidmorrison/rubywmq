@@ -1,23 +1,14 @@
-################################################################################
-#  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-################################################################################
+require 'wmq/version'
+require 'wmq/constants'
+require 'wmq/constants_admin'
+require 'wmq/queue_manager'
+require 'wmq/message'
 
-# Load wmq that uses auto-load library.
-# 
-# If it fails, then it is likely due to this platform not being supported
-# by auto load facility in Ruby WMQ, so try to load client linked library
+# Load wmq using the auto-load library.
+#
+# If it fails, then it is most likely since this platform is not supported
+# by the auto load facility in Ruby WMQ, so try to load client linked library
+# For Example AIX does not support Autoload whereas Windows and Linux are supported
 begin
   require 'wmq/wmq'
 rescue LoadError

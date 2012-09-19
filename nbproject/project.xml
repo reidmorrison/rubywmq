@@ -5,9 +5,9 @@
         <data xmlns="http://www.netbeans.org/ns/ruby-project/1">
             <name>rubywmq</name>
             <source-roots>
-                <root id="src.dir"/>
+                <root id="src.dir" name="ext"/>
                 <root id="examples.dir"/>
-                <root id="lib.dir"/>
+                <root id="lib.dir" name="Source Files"/>
             </source-roots>
             <test-roots>
                 <root id="test.src.dir"/>

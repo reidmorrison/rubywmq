@@ -1,9 +1,12 @@
+lib/wmq/constants.rb
+lib/wmq/constants_admin.rb
 ext/wmq_structs.c
-ext/Makefile
-ext/lib/wmq_const.rb
-ext/lib/wmq_const_admin.rb
 ext/wmq_reason.c
+ext/Makefile
 ext/*.o
 ext/wmq.so
 nbproject/private/*
-rubywmq*.gem
+.DS_Store
+*.gem
+.idea/*
+Gemfile.lock

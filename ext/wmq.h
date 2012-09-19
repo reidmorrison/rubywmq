@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- *  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
+ *  Copyright 2006 J. Reid Morrison
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,6 +31,10 @@
 #endif
 #ifndef HAVE_RB_STR_SET_LEN
    #define rb_str_set_len(str, length) (RSTRING_LEN(str) = (length))
+#endif
+
+#ifndef _int64
+   #define _int64 long long
 #endif
 
 #include <cmqc.h>

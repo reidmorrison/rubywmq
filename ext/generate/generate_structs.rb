@@ -1,30 +1,15 @@
-################################################################################
-#  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-################################################################################
 require 'erb'
 
 class GenerateStructs
-  
+
   @@field_ignore_list = [ 'StrucId', 'Version' , 'StrucLength']
-  
+
   # Store path to WebSphere MQ Structures
   def initialize(wmq_includepath, templates_path='.')
     @path = wmq_includepath
     @templates_path = templates_path
   end
-  
+
   def extract_struct (filename, struct_name)
     properties_list = []
     line_number = 0
@@ -51,7 +36,7 @@ class GenerateStructs
     end
     properties_list
   end
-  
+
   def rubyize_name(name)
     name.gsub(/::/, '/').
     gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
@@ -59,7 +44,7 @@ class GenerateStructs
     tr("-", "_").
     downcase
   end
-  
+
   def self.test_rubyize_name
     test = self.new
     [['a', 'a'],
@@ -75,11 +60,11 @@ class GenerateStructs
       raise("rubyize_name('#{item[0]}') == #{str} != '#{item[1]})") if str != item[1]
     end
   end
-  
+
   def generate_structs(erb)
     erb.result(binding)
   end
-  
+
   def generate(target_filename = 'wmq_structs.c')
     erb = nil
     File.open(@templates_path+'/wmq_structs.erb') { |file| erb = ERB.new(file.read) }

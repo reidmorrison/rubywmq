@@ -1,20 +1,4 @@
-<% 
-################################################################################
-#  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-################################################################################
-
+<%
     symbols = {
           'descriptor='=>nil,
           'headers='=>nil,
@@ -68,7 +52,7 @@
       # Transmission-queue header - Todo: Need to deal with MQMDE
       {:file=>'cmqc.h', :struct=>'MQXQH', :header=>'xmit_q_header', :format=>'MsgDesc.Format'},
     ]
-    
+
     wmq_structs.each do |struct|
       # Parse WebSphere MQ 'C' Header file and extract elements
       elements = extract_struct(@path+'/'+struct[:file], struct[:struct])
@@ -84,20 +68,6 @@
     end
 %>
 /* --------------------------------------------------------------------------
- *  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- * --------------------------------------------------------------------------
  *
  *  WARNING: DO NOT MODIFY THIS FILE
  *
@@ -110,16 +80,16 @@
 /* --------------------------------------------------------------------------
  *  Static's to hold Symbols
  * --------------------------------------------------------------------------*/
-<% 
+<%
     header_file = 'cmqc.h'
     struct = 'MQMD'
 
     # Define static variables to hold Ruby symbols
     key_list = symbols.keys.sort
-    key_list.each do |key, value| 
+    key_list.each do |key, value|
       %><%="static ID ID_#{key.sub('=', '_set')};\n" %><%
     end
-    
+
     # initialize symbols
     %>
 /* --------------------------------------------------------------------------
@@ -127,7 +97,7 @@
  * --------------------------------------------------------------------------*/
 void wmq_structs_id_init()
 {
-<%  key_list.each do |key, value| 
+<%  key_list.each do |key, value|
       %><%="    ID_%-20s = rb_intern(\"%s\");\n"% [key.sub('=', '_set'), key] %><%
     end
 %>}
@@ -145,18 +115,18 @@ void Message_from_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* <%=var
 {
     VALUE  str;
     size_t size;
-    size_t length; 
+    size_t length;
     size_t i;
     char*  pChar;
-        
+
 <%
       elements.each do |item|
         type = item[0]
         name = item[1]
-          
+
         next if @@field_ignore_list.include?(name) ||
                 (name=='Format' && struct[:header])
-          
+
         match = /(MQ\D+)/.match(type)
         type = "#{match[1]}S" if match[1] != type
 %><%=   if type == 'MQMDS'
@@ -164,25 +134,25 @@ void Message_from_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* <%=var
         else
           "    %-16s(hash, %-30s #{variable}->%s)\n" % ["WMQ_#{type}2HASH", rubyize_name(name)+',',name]
         end %><%
-      end 
+      end
 %>}
 
 static int Message_to_<%=struct_name.downcase%>_each (VALUE key, VALUE value, <%=struct_name%>* p<%=struct_name.downcase%>)
 {
     VALUE str;
     size_t size;
-    size_t length; 
+    size_t length;
     VALUE  val;
     ID     id = rb_to_id(key);
-    
+
    <% contains = nil
       elements.each do |item|
         type = item[0]
         name = item[1]
-          
+
         next if @@field_ignore_list.include?(name) ||
                 (name=='Format' && struct[:header])
-          
+
         match = /(MQ\D+)/.match(type)
         type = "#{match[1]}S" if match[1] != type
 %><%=   if type == 'MQMDS'
@@ -198,9 +168,9 @@ static int Message_to_<%=struct_name.downcase%>_each (VALUE key, VALUE value, <%
     else<%   end
       end
 %><%=struct[:header]?" if(id != ID_header_type)":""%><%
-      if contains 
+      if contains
 %> {
-      Message_to_<%= contains%>_each(key, value, &pmqxqh->MsgDesc); 
+      Message_to_<%= contains%>_each(key, value, &pmqxqh->MsgDesc);
    }<%
       else%>
     {
@@ -215,7 +185,7 @@ void Message_to_<%=struct_name.downcase%>(VALUE hash, <%=struct_name%>* p<%=stru
 {
     rb_hash_foreach(hash, Message_to_<%=struct_name.downcase%>_each, (VALUE)p<%=struct_name.downcase%>);
 }
-<%  end # wmq_structs.each 
+<%  end # wmq_structs.each
 %>
 
 /* --------------------------------------------------------------------------
@@ -240,10 +210,10 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
         {
             VALUE hash = rb_hash_new();
             P<%=struct[:struct]%> p_header = (P<%=struct[:struct]%>)p_data;
-            
+
             if(trace_level>2)
                 printf("WMQ::Message#deblock Found <%=struct[:header]%>\n");
-                
+
             if(memcmp(p_header->StrucId, <%=struct[:struct_id] || "#{struct[:struct].upcase}_STRUC_ID"%>, sizeof(p_header->StrucId)) != 0)
             {
                 if(trace_level>1)
@@ -277,7 +247,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
         else
 <%
       end
-    end # wmq_structs.each 
+    end # wmq_structs.each
 %>        {
             break;
         }
@@ -287,7 +257,7 @@ void Message_deblock(VALUE self, PMQMD pmqmd, PMQBYTE p_buffer, MQLONG total_len
     {
         strncpy(pmqmd->Format, p_format, MQ_FORMAT_LENGTH);
     }
-    
+
     Message_from_mqmd(descriptor, pmqmd);
     rb_funcall(self, ID_descriptor_set, 1, descriptor);
     rb_funcall(self, ID_headers_set, 1, headers);
@@ -302,8 +272,8 @@ void Message_build_set_format(ID header_type, PMQBYTE p_format)
 %>    if(header_type == ID_<%=struct[:header]%>) { memcpy(p_format, MQFMT_<%=struct[:header].upcase%>, MQ_FORMAT_LENGTH); return;}
 <%
       end
-    end # wmq_structs.each 
-    
+    end # wmq_structs.each
+
 %>
     rb_raise(rb_eArgError, "Invalid/Unknown header_type supplied in WMQ::Message#headers array");
 }
@@ -332,7 +302,7 @@ int Message_build_header (VALUE hash, struct Message_build_header_arg* parg)
 
             if(parg->trace_level>2)
                 printf ("WMQ::Message#build_header Found <%=struct[:header]%>\n");
-                
+
             p_data = Message_autogrow_data_buffer(parg, sizeof(<%=struct[:struct]%>));
 
             memcpy(p_data, &<%=struct[:struct]%>_DEF, sizeof(<%=struct[:struct]%>));
@@ -351,13 +321,13 @@ int Message_build_header (VALUE hash, struct Message_build_header_arg* parg)
 
             if(parg->trace_level>2)
                 printf ("WMQ::Message#build_header data offset:%ld\n", (long)(*(parg->p_data_offset)));
-<%      end 
+<%      end
 %>        }
         else
 <%
       end
-    end # wmq_structs.each 
-    
+    end # wmq_structs.each
+
 %>        {
             rb_raise(rb_eArgError, "Unknown :header_type supplied in WMQ::Message#headers array");
         }

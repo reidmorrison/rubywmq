@@ -1,6 +1,7 @@
+# Extract Constants from the WebSphere MQ header files
 class GenerateConst
-  
-  #Extract Constants from Header files  
+
+  # Extract Constants from Header files
   def GenerateConst.extract_const(filename, const_prefix, start_exp=nil, end_exp=nil)
     @constants = []
     active = if start_exp then false else true end    # Sure there is a better way
@@ -23,8 +24,8 @@ class GenerateConst
     end
     @constants
   end
-  
-  #Extract MQ Constants from Header files  
+
+  # Extract MQ Constants from Header files
   def GenerateConst.rb_const(filename, const_prefix, exclude_exp=nil)
     str = ''
     GenerateConst.extract_const(filename, const_prefix).each do |item|
@@ -42,7 +43,7 @@ class GenerateConst
     end
     str
   end
-  
+
   def GenerateConst.config(filename, prefix)
     str = "# WMQ::QueueManager execute commands\n"
     str << "execute_commands:\n"
@@ -55,23 +56,9 @@ class GenerateConst
     end
     str
   end
-  
+
   def GenerateConst.wmq_const(path)
     str = <<END_OF_STRING
-################################################################################
-#  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
 ################################################################################
 #
 #  WARNING: DO NOT MODIFY THIS FILE
@@ -81,18 +68,18 @@ class GenerateConst
 ################################################################################
 module WMQ
 END_OF_STRING
-    [ ['Connect Options','cmqc.h','MQCNO_',/(VERSION)|(CONN_TAG)|(HANDLE_SHARE)/],
+    [ ['Connect Options','cmqc.h','MQCNO_',/(VERSION)|(CONN_TAG)|(HANDLE_SHARE)|(_LENGTH)/],
       ['Open Options', 'cmqc.h','MQOO_' ],
       ['Close Options', 'cmqc.h','MQCO_'],
       ['Match Options', 'cmqc.h','MQMO_'],
       ['Message Format Options', 'cmqc.h','MQFMT_',/(_ARRAY)/],
-      ['Get Message Options', 'cmqc.h','MQGMO_',/(VERSION)/],
+      ['Get Message Options', 'cmqc.h','MQGMO_',/(VERSION)|(LENGTH)|(MQGMO_BROWSE_HANDLE)|(MQGMO_BROWSE_CO_OP)/],
       ['Transport Types', 'cmqxc.h','MQXPT_'] ,
       ['Report Options', 'cmqc.h', 'MQRO_'],
       ['Message Types', 'cmqc.h', 'MQMT_'],
       ['Expiry', 'cmqc.h', 'MQEI_'],
       ['Feedback Values', 'cmqc.h', 'MQFB_'],
-      ['Encoding Values', 'cmqc.h', 'MQENC_'],
+      ['Encoding Values', 'cmqc.h', 'MQENC_',/(MQENC_NORMAL)|(MQENC_REVERSED)|(MQENC_S390)|(MQENC_TNS)/],
       ['Coded Character Set Identifiers', 'cmqc.h', 'MQCCSI_'],
       ['Priority', 'cmqc.h', 'MQPRI_'],
       ['Persistence', 'cmqc.h', 'MQPER_'],
@@ -108,23 +95,9 @@ END_OF_STRING
     end
     str << "end\n"
   end
-  
+
   def GenerateConst.admin_consts(path)
     str = <<END_OF_STRING
-################################################################################
-#  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
 ################################################################################
 #
 #  WARNING: DO NOT MODIFY THIS FILE
@@ -142,7 +115,7 @@ END_OF_STRING
       str << "\n# #{item[0]}\n"
       str << GenerateConst.rb_const("#{path}/#{item[1]}", item[2], item[3])
     end
-    GenerateConst.extract_const(path+'cmqc.h', 'MQ', /Queue\sAttributes/, /typedef/).each do |item|
+    GenerateConst.extract_const(path+'cmqc.h', 'MQ', /Queue\s+Attributes/, /General\s+Constants/).each do |item|
       str << "   %-30s = #{item[1]}\n" % item[0]
     end
     str << "# Admin constants from cmqcfc.h\n"
@@ -151,14 +124,14 @@ END_OF_STRING
     end
     str << "end\n"
   end
-  
+
   def self.generate(path, target_path='')
-    File.open(File.join(target_path,'wmq_const_admin.rb'), 'w') {|file| file.write(GenerateConst.admin_consts(path))}
+    File.open(File.join(target_path,'constants_admin.rb'), 'w') {|file| file.write(GenerateConst.admin_consts(path))}
     puts 'Generated wmq_const_admin.rb'
-    File.open(File.join(target_path,'wmq_const.rb'), 'w') {|file| file.write(GenerateConst.wmq_const(path))}
+    File.open(File.join(target_path,'constants.rb'), 'w') {|file| file.write(GenerateConst.wmq_const(path))}
     puts 'Generated wmq_const.rb'
   end
-end  
+end
 
 if $0 == __FILE__
   path = ARGV[0] || raise("Mandatory parameter: 'WebSphere MQ Include path' is missing")

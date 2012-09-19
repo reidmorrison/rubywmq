@@ -1,6 +1,6 @@
 class GenerateReason
 
-  #Extract Error Code Constants from Header files  
+  # Extract Error Code Constants from Header files
   def GenerateReason.extract_const(filename, const_prefix)
     @constants = []
     File.open(filename) do |file|
@@ -16,8 +16,8 @@ class GenerateReason
     end
     @constants
   end
-  
-  #Extract Error Code Constants from Header files  
+
+  # Extract Error Code Constants from Header files
   # Uses lazy print to collect duplicate values
   def GenerateReason.reason_case(filename, prefix)
     last_rc = nil
@@ -36,8 +36,8 @@ class GenerateReason
     end
     str
   end
-  
-# The WebSphere MQ header files have several duplicate values, 
+
+# The WebSphere MQ header files have several duplicate values,
 # so need to exclude duplicates.
   def GenerateReason.selector_case(filename, prefix, excludes=nil, &block)
     GenerateReason.extract_const(filename,prefix).each do |item|
@@ -46,24 +46,10 @@ class GenerateReason
       block.call item
     end
   end
-  
+
   def GenerateReason.wmq_reason(path)
     str = <<END_OF_STRING
 /* --------------------------------------------------------------------------
- *  Copyright 2006 J. Reid Morrison. Dimension Solutions, Inc.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- * --------------------------------------------------------------------------
  *
  *  WARNING: DO NOT MODIFY THIS FILE
  *
@@ -97,9 +83,10 @@ END_OF_STRING
     [['cmqc.h', 'MQIA_'],
      ['cmqcfc.h', 'MQIACF_', ['MQIACF_ERROR_ID',
                               'MQIACF_QUIESCE']],
-     ['cmqcfc.h', 'MQIACH_', ['MQIACH_CURRENT_SEQ_NUMBER', 
-                              'MQIACH_BYTES_RCVD', 
-                              'MQIACH_BUFFERS_RCVD']],
+     ['cmqcfc.h', 'MQIACH_', ['MQIACH_CURRENT_SEQ_NUMBER',
+                              'MQIACH_BYTES_RCVD',
+                              'MQIACH_BUFFERS_RCVD',
+                              'MQIACH_MSGS_RCVD']],
      ['cmqcfc.h', 'MQIAMO_'],
      ['cmqcfc.h', 'MQIAMO64_',  ['MQIAMO64_AVG_Q_TIME',
                                                     'MQIAMO64_Q_TIME_AVG',
@@ -125,7 +112,7 @@ END_OF_STRING
         str_switch << "        case %-30s: return ID_#{id};\n" % const[0]
         str_id_init << "    ID_%-25s = rb_intern(\"#{id}\");\n" % id
         str << "static ID ID_#{id};\n"
-      end        
+      end
     end
 
     str << <<END_OF_STRING
@@ -156,8 +143,8 @@ END_OF_STRING
     [['cmqc.h',   'MQIA_'],
      ['cmqcfc.h', 'MQIACF_', ['MQIACF_ERROR_ID',
                                               'MQIACF_QUIESCE']],
-     ['cmqcfc.h', 'MQIACH_', ['MQIACH_CURRENT_SEQ_NUMBER', 
-                                              'MQIACH_BYTES_RCVD', 
+     ['cmqcfc.h', 'MQIACH_', ['MQIACH_CURRENT_SEQ_NUMBER',
+                                              'MQIACH_BYTES_RCVD',
                                               'MQIACH_BUFFERS_RCVD']],
      ['cmqcfc.h', 'MQIAMO_'],
      ['cmqcfc.h', 'MQIAMO64_',  ['MQIAMO64_AVG_Q_TIME',
@@ -169,8 +156,8 @@ END_OF_STRING
     ].each do |item|
       str << "    /* Consteants #{item[1]}* from #{item[0]} */\n"
       GenerateReason.selector_case(path+item[0], item[1], item[2]) do |const|
-        str << "    if(selector_id == %-32s{ *selector = #{const[0]}; return;}\n" % "ID_#{const[0].gsub(item[1],'').downcase})" 
-      end        
+        str << "    if(selector_id == %-32s{ *selector = #{const[0]}; return;}\n" % "ID_#{const[0].gsub(item[1],'').downcase})"
+      end
     end
     str << "\n    *selector_type = MQIT_STRING;\n\n"
 # Character Selectors for Object Attributes
@@ -182,16 +169,16 @@ END_OF_STRING
 #     ['cmqc.h', 'MQBA_'],
 #     ['cmqcfc.h', 'MQBACF_'],
 # Group Selectors for Object Attributes
-#     ['cmqcfc.h', 'MQGACF_'] 
+#     ['cmqcfc.h', 'MQGACF_']
     ].each do |item|
       str << "    /* Constants #{item[1]}* from #{item[0]} */\n"
       GenerateReason.selector_case(path+item[0], item[1], item[2]) do |const|
-        str << "    if(selector_id == %-32s{ *selector = #{const[0]}; return;}\n" % "ID_#{const[0].gsub(item[1],'').downcase})" 
-      end        
+        str << "    if(selector_id == %-32s{ *selector = #{const[0]}; return;}\n" % "ID_#{const[0].gsub(item[1],'').downcase})"
+      end
     end
 
     str << <<END_OF_STRING
-    
+
     rb_raise(rb_eArgError, "WMQ::QueueManager#execute [wmq_selector] Unknown selector supplied");
 }
 
@@ -208,9 +195,9 @@ END_OF_STRING
         end
         id = const[0].gsub('MQCMD_','').downcase
         str_id_init << "    ID_%-25s = rb_intern(\"#{id}\");\n" % id
-        str_if << "if(command_id == %-28s{ command = #{const[0]}; }\n" % "ID_#{const[0].gsub('MQCMD_','').downcase})" 
+        str_if << "if(command_id == %-28s{ command = #{const[0]}; }\n" % "ID_#{const[0].gsub('MQCMD_','').downcase})"
         str << "static ID ID_#{id};\n"
-      end        
+      end
     str << <<END_OF_STRING
 
 void QueueManager_command_id_init()
@@ -221,7 +208,7 @@ void QueueManager_command_id_init()
 MQLONG wmq_command_lookup(ID command_id)
 {
     MQLONG command = 0;
-#{str_if}    
+#{str_if}
     else
     {
         rb_raise(rb_eArgError, "WMQ::QueueManager#execute [wmq_command_lookup] Unknown command supplied");
@@ -232,7 +219,7 @@ MQLONG wmq_command_lookup(ID command_id)
 END_OF_STRING
   str
   end
-  
+
   def self.generate(path)
     File.open('wmq_reason.c', 'w') {|file| file.write(GenerateReason.wmq_reason(path))}
     puts 'Generated wmq_reason.c'
