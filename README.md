@@ -8,40 +8,45 @@ RubyWMQ is a high performance native Ruby interface into WebSphere MQ.
 
 The Ruby WMQ interface currently supports the following features:
 
-* High performance
-  Able to read over 2000 messages per second from a Queue
-  (Non-persistent messages, < 4K each, MQ V6, running on Windows Laptop)
+High performance
 
-* Full support for the entire MQ Administration interface (MQAI)
-  Create Queues
-  Query Queue Depths
-  etc…
+* Able to read over 2000 messages per second from a Queue
+* (Non-persistent messages, < 4K each, MQ V6, running on Windows Laptop)
 
-* Full support for all WebSphere MQ Headers
-  Rules and Format Header 2 (RFH2)
-  Rules and Format Header (RFH)
-  Name Value pairs returned as a Hash
-  Dead Letter Header
-  Transmission Queue Header
-  IMS, CICS, …..
+Full support for the entire MQ Administration interface (MQAI)
 
-* Conforms with the Ruby way. Implements:
-  each
-  Code blocks
-  etc..
+* Create Queues
+* Query Queue Depths
+* etc…
 
-* Relatively easy interface for reading or writing messages
-  MQ Headers made easy
+Full support for all WebSphere MQ Headers
 
-* Single Ruby WMQ auto-detection library that concurrently supports:
-  WebSphere MQ Server Connection
-  WebSphere MQ Client Connection
+* Rules and Format Header 2 (RFH2)
+* Rules and Format Header (RFH)
+* Name Value pairs returned as a Hash
+* Dead Letter Header
+* Transmission Queue Header
+* IMS, CICS, …..
 
-* Includes latest client connection options such as SSL
+Conforms with the Ruby way. Implements:
 
-* Tested with WebSphere MQ V5.3, V6, V7, and V7.5
+* each
+* Code blocks
 
-* Is written in C to ensure easier portability and performance
+Relatively easy interface for reading or writing messages
+
+* MQ Headers made easy
+
+Single Ruby WMQ auto-detection library that concurrently supports:
+
+* WebSphere MQ Server Connection
+* WebSphere MQ Client Connection
+
+Includes latest client connection options such as SSL
+
+Tested with WebSphere MQ V5.3, V6, V7, and V7.5
+
+Is written in C to ensure easier portability and performance
 
 ### Compatibility
 
@@ -58,21 +63,18 @@ WebSphere MQ
 
 ## Example
 
-    require 'rubygems'
-    require 'wmq'
+```ruby
+require 'rubygems'
+require 'wmq'
 
-    # Connect to a local queue manager called 'TEST' and put a single message
-    # on the queue 'TEST.QUEUE'
-    WMQ::QueueManager.connect(:q_mgr_name=>'TEST') do |qmgr|
-      qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
-    end
+# Connect to a local queue manager called 'TEST' and put a single message
+# on the queue 'TEST.QUEUE'
+WMQ::QueueManager.connect(:q_mgr_name=>'TEST') do |qmgr|
+    qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
+end
+```
 
-## Documentation
-
-Documentation for the RubyWMQ Gem is generated automatically when the gem is installed.
-It is also available [online](http://rubywmq.rubyforge.org/doc/index.html)
-
-## Examples
+## More Examples
 
 There are many examples covering many of the ways that RubyWMQ can be used. The examples
 are installed as part of the Gem under the 'examples' sub-directory. The examples can
@@ -130,18 +132,26 @@ Sample “client” and “server” side applications for sending or processing
 * request.rb
 * server.rb
 
+## Documentation
+
+Documentation for the RubyWMQ Gem is generated automatically when the gem is installed.
+It is also available [online](http://rubywmq.rubyforge.org/doc/index.html)
+
 ## Installation
 
 ### Installing on UNIX/Linux
 
-* Install a 'C' Compiler, GNU C++ is recommended
-* Install Ruby using the package manager for your platform
-* Also install RubyGems and ruby-dev or ruby-sdk packages if not already installed
-* Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerworks/downloads/ws/wmq/)
+Install a 'C' Compiler, GNU C++ is recommended
 
-    Note: Install the Development Toolkit (SDK) and Client
+Install Ruby using the package manager for your platform
 
-* Install RubyWMQ Gem
+Also install RubyGems and ruby-dev or ruby-sdk packages if not already installed
+
+Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerworks/downloads/ws/wmq/)
+
+* Note: Install the Development Toolkit (SDK) and Client
+
+Install RubyWMQ Gem
 
     gem install rubywmq
 
@@ -149,9 +159,9 @@ If no errors appear RubyWMQ is ready for use
 
 #### Installation Errors
 
-Use this command to find the directory in which the gem was installed
+Use this command to find the directory in which the gems are installed
 
-    gem which rubywmq
+    gem env
 
 When WebSphere MQ is not installed in the default location, call the build
 command directly and supply the location explicitly:
@@ -170,15 +180,15 @@ This build option is a last resort since it will only work using a client connec
 
 #### Install Ruby and DevKit
 
-* Download and install the Ruby installer from http://rubyinstaller.org/downloads/
+Download and install the Ruby installer from http://rubyinstaller.org/downloads/
 
-    Select "Add Ruby executables to your PATH" during the installation
+* Select "Add Ruby executables to your PATH" during the installation
 
-* Download and install the Development Kit from the same site
+Download and install the Development Kit from the same site
 
-    Extract files into c:\DevKit
+* Extract files into c:\DevKit
 
-* Open a command prompt and run the commands below:
+Open a command prompt and run the commands below:
 
     cd c:\DevKit
     ruby dk.rb init
@@ -187,14 +197,14 @@ If you experience any difficulties, see ﻿https://github.com/oneclick/rubyinsta
 
 #### Install WebSphereMQ
 
-* Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerworks/downloads/ws/wmq/)
+Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerworks/downloads/ws/wmq/)
 
-    Note: Install the Development Toolkit (SDK) and Client
+* Note: Install the Development Toolkit (SDK) and Client
 
 #### Install the RubyWMQ Gem
 
     call "c:\DevKit\devkitvars.bat"
-   ﻿ gem install rubywmq --platform=ruby
+    gem install rubywmq --platform=ruby
 
 #### Installation Errors
 
@@ -217,16 +227,20 @@ above and call the build command directly while supplying the location explicitl
 
 ### Verifying a local WebSphere MQ Server installation
 
-* Create a local Queue Manager called TEST. Select the option to create the server
+Create a local Queue Manager called TEST. Select the option to create the server
 side channels.
-* Create a local queue called TEST.QUEUE
-* Run the following Ruby Code in an irb session:
 
-    require 'rubygems'
-    require 'wmq'
-    WMQ::QueueManager.connect(:q_mgr_name=>'TEST') do |qmgr|
-      qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
-    end
+Create a local queue called TEST.QUEUE
+
+Run the following Ruby Code in an irb session:
+
+```ruby
+require 'rubygems'
+require 'wmq'
+WMQ::QueueManager.connect(:q_mgr_name=>'TEST') do |qmgr|
+  qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
+end
+```
 
 ## Rails Installation
 
@@ -269,78 +283,81 @@ When connecting to either a local or remote WebSphere MQ Queue Manager, a very c
 error returned is that the Queue Manager is not available. This error can occur
 under any of the following circumstances:
 
-* MQ Server Connections (Local Queue Manager)
+#### MQ Server Connections (Local Queue Manager)
 
-** Possible Configuration Issues:
+Possible Configuration Issues:
 
-*** Ensure that :connection_name is not being supplied to the connect method.
+* Ensure that :connection_name is not being supplied to the connect method.
 Even if it is supplied with a nul or empty value, it will cause a client connection attempt to be made.
 
-** Is the Queue Manager active?
+Is the Queue Manager active?
 
-*** Try running the following command on the machine running the Queue Manager
+* Try running the following command on the machine running the Queue Manager
 and check that the Queue Manager is marked as ‘Running’:
 
+```
     dspmq
 
     Expected output:
     QMNAME(REID)                          STATUS(Running)
+```
 
-*** Check that the :q_mgr_name supplied to QueueManager::connect matches the Queue Manager name above. Note: Queue Manager names are case-sensitive
+* Check that the :q_mgr_name supplied to QueueManager::connect matches the Queue Manager name above.
+* Note: Queue Manager names are case-sensitive
 
-* MQ Client Connections (Remote Queue Manager)
+#### MQ Client Connections (Remote Queue Manager)
 
-** Possible Client Configuration Issues:
+Possible Client Configuration Issues:
 
-*** Incorrect host name
+* Incorrect host name
+* Incorrect port number
+* Incorrect Channel Name
 
-*** Incorrect port number
+    For example, the channel being used does not exist on the remote Queue Manager.
 
-*** Incorrect Channel Name
+* Note: The channel name is case-sensitive
 
-**** For example, the channel being used does not exist on the remote Queue Manager.
+Incorrect Queue Manager Name
 
-**** Note: The channel name is case-sensitive
+* :q_mgr_name is optional for Client Connections. It does however ensure that the program connects to the expected Queue Manager.
 
-*** Incorrect Queue Manager Name
+    For example when the wrong Queue Manager listener is now running on the expected port.
 
-**** :q_mgr_name is optional for Client Connections. It does however ensure that the program connects to the expected Queue Manager.
-
-**** For example when the wrong Queue Manager listener is now running on the expected port.
-
-** Is the MQ listener program running on the port supplied above?
+* Is the MQ listener program running on the port supplied above?
 
 
-*** On UNIX/Linux, try the following command on the machine running the Queue Manager:
+On UNIX/Linux, try the following command on the machine running the Queue Manager:
 
     ps -ef | grep runmqlsr
 
+* The Queue Mananger name and port number should be displayed
 
-*** The Queue Mananger name and port number should be displayed
+* If no port number is specified on the command line for an instance of runmqlsr, it means that it is using port 1414.
 
-*** If no port number is specified on the command line for an instance of runmqlsr, it means that it is using port 1414.
+Is the Queue Manager active?
 
-** Is the Queue Manager active?
+* Try running the following command on the machine running the Queue Manager and check that the Queue Manager is marked as ‘Running’:
 
-*** Try running the following command on the machine running the Queue Manager and check that the Queue Manager is marked as ‘Running’:
-
+```
     dspmq
 
     Expected output:
     QMNAME(REID)                          STATUS(Running)
+```
 
-*** Check that the :q_mgr_name supplied to QueueManager::connect matches the Queue Manager name above. Note: Queue Manager names are case-sensitive
+* Check that the :q_mgr_name supplied to QueueManager::connect matches the Queue Manager name above. Note: Queue Manager names are case-sensitive
+* Check if the Channel being used is still defined on the Queue Manager
 
-*** Check if the Channel being used is still defined on the Queue Manager
+    On the machine running the Queue Manager, run the following commands (may need to run them under the 'mqm' userid):
 
-*** On the machine running the Queue Manager, run the following commands (may need to run them under the 'mqm' userid):
-
+```
     runmqsc queue_manager_name
     dis channel(*) chltype(SVRCONN)
+```
 
-*** Replace queue_manager_name above with the actual name of the Queue Manager being connected to
-
-*** Look for the channel name the application is using. Note: the channel name is case-sensitive.
+* Replace queue_manager_name above with the actual name of the Queue Manager being connected to
+* Look for the channel name the application is using.
+* Note: the channel name is case-sensitive.
 
 ## Support
 
