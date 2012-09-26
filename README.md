@@ -296,10 +296,10 @@ Is the Queue Manager active?
 and check that the Queue Manager is marked as ‘Running’:
 
 ```
-    dspmq
+dspmq
 
-    Expected output:
-    QMNAME(REID)                          STATUS(Running)
+Expected output:
+QMNAME(REID)                          STATUS(Running)
 ```
 
 * Check that the :q_mgr_name supplied to QueueManager::connect matches the Queue Manager name above.
@@ -339,10 +339,10 @@ Is the Queue Manager active?
 * Try running the following command on the machine running the Queue Manager and check that the Queue Manager is marked as ‘Running’:
 
 ```
-    dspmq
+dspmq
 
-    Expected output:
-    QMNAME(REID)                          STATUS(Running)
+Expected output:
+QMNAME(REID)                          STATUS(Running)
 ```
 
 * Check that the :q_mgr_name supplied to QueueManager::connect matches the Queue Manager name above. Note: Queue Manager names are case-sensitive
@@ -351,8 +351,8 @@ Is the Queue Manager active?
     On the machine running the Queue Manager, run the following commands (may need to run them under the 'mqm' userid):
 
 ```
-    runmqsc queue_manager_name
-    dis channel(*) chltype(SVRCONN)
+runmqsc queue_manager_name
+dis channel(*) chltype(SVRCONN)
 ```
 
 * Replace queue_manager_name above with the actual name of the Queue Manager being connected to
@@ -361,9 +361,7 @@ Is the Queue Manager active?
 
 ## Support
 
-Ruby WMQ Community Support Mailing List:
-
-    http://rubyforge.org/mailman/listinfo/rubywmq-misc
+Ruby WMQ Community Support Mailing List: <http://rubyforge.org/mailman/listinfo/rubywmq-misc>
 
 Feature and Bug Reports: <http://github.com/reidmorrison/rubywmq/issues>
 
