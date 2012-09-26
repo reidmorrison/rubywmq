@@ -1,7 +1,9 @@
 require 'mkmf'
-require File.join(File.dirname(__FILE__), 'generate', 'generate_reason')
-require File.join(File.dirname(__FILE__), 'generate', 'generate_const')
-require File.join(File.dirname(__FILE__), 'generate', 'generate_structs')
+generate_sources_path = File.join(File.dirname(__FILE__), 'generate')
+$LOAD_PATH.unshift generate_sources_path
+require 'generate_reason'
+require 'generate_const'
+require 'generate_structs'
 
 include_path = ''
 if RUBY_PLATFORM =~ /win|mingw/i
@@ -22,7 +24,7 @@ end
 # Generate Source Files
 GenerateReason.generate(include_path+'/')
 GenerateConst.generate(include_path+'/', File.dirname(__FILE__) + '/../lib/wmq')
-GenerateStructs.new(include_path+'/', 'generate').generate
+GenerateStructs.new(include_path+'/', generate_sources_path).generate
 
 # Generate Makefile
 create_makefile('wmq/wmq')
