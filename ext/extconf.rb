@@ -11,7 +11,9 @@ if RUBY_PLATFORM =~ /win|mingw/i
   dir_config('mqm', include_path, '.')
 else
   include_path = '/opt/mqm/inc'
-  dir_config('mqm', include_path, '/opt/mqm/lib64')
+  lib64_path   = '/opt/mqm/lib64'
+  lib_path     = File.directory?(lib64_path) ? lib64_path : '/opt/mqm/lib'
+  dir_config('mqm', include_path, lib_path)
 end
 
 have_header('cmqc.h')
