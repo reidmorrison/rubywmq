@@ -2,6 +2,7 @@ lib = File.expand_path('../lib/', __FILE__)
 $:.unshift lib unless $:.include?(lib)
 
 require 'rubygems'
+require 'rubygems/package'
 require 'rake/clean'
 require 'rake/testtask'
 require 'date'
@@ -10,15 +11,16 @@ require 'wmq/version'
 desc "Build Ruby Source gem"
 task :gem  do |t|
   excludes = [
-    'lib/wmq/constants.rb',
-    'lib/wmq/constants_admin.rb',
-    'ext/wmq_structs.c',
-    'ext/wmq_reason.c',
-    'ext/Makefile',
-    'ext/*.o',
-    'ext/wmq.so',
-    '*.gem',
-    'nbproject'
+    /lib.wmq.constants\.rb/,
+    /lib.wmq.constants_admin\.rb/,
+    /ext.wmq_structs\.c/,
+    /ext.wmq_reason\.c/,
+    /ext.Makefile/,
+    /ext.*\.o/,
+    /ext.wmq\.so/,
+    /\.gem$/,
+    /\.log$/,
+    /nbproject/
   ]
 
   gemspec = Gem::Specification.new do |spec|
@@ -31,8 +33,8 @@ task :gem  do |t|
     spec.date              = Date.today.to_s
     spec.summary           = "Native Ruby interface into WebSphere MQ"
     spec.description       = "RubyWMQ is a high performance native Ruby interface into WebSphere MQ."
-    spec.files             = FileList["./**/*"].exclude(*excludes).map{|f| f.sub(/^\.\//, '')} +
-                             ['.document']
+    spec.files             = FileList["./**/*"].exclude(*excludes).map{|f| f.sub(/^\.\//, '')} + ['.document']
+    spec.license           = "Apache License V2.0"
     spec.extensions        << 'ext/extconf.rb'
     spec.rubyforge_project = 'rubywmq'
     spec.test_file         = 'tests/test.rb'
@@ -41,7 +43,8 @@ task :gem  do |t|
     spec.add_development_dependency 'shoulda'
     spec.requirements << 'WebSphere MQ v5.3, v6 or v7 Client or Server with Development Kit'
   end
-  Gem::Builder.new(gemspec).build
+  p gemspec.files
+  Gem::Package.build gemspec
 end
 
 desc "Build a binary gem including pre-compiled binary files for re-distribution"
@@ -66,6 +69,7 @@ task :binary  do |t|
                              Dir['doc/**/*.*'] +
                              Dir['lib/**/*.rb'] +
                              ['lib/wmq/wmq.so', 'tests/test.rb', 'README', 'LICENSE']
+    spec.license           = "Apache License V2.0"
     spec.rubyforge_project = 'rubywmq'
     spec.test_file         = 'tests/test.rb'
     spec.has_rdoc          = false
@@ -73,7 +77,7 @@ task :binary  do |t|
     spec.add_development_dependency 'shoulda'
     spec.requirements << 'WebSphere MQ v5.3, v6 or v7 Client or Server with Development Kit'
   end
-  Gem::Builder.new(gemspec).build
+  Gem::Package.build gemspec
 end
 
 desc "Run Test Suite"
