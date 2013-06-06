@@ -256,7 +256,7 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
         {
             /*
              * Use system defined connection data rather than explicitly providing a
-             * connection name. This is used with CCDT, the MQSERVER variable or the
+             * connection name. This is used with CCDT, the MQSERVER ENV var or the
              * mqclient.ini file
              */
             pqm->connect_options.ClientConnPtr = NULL;
