@@ -1188,6 +1188,12 @@ static VALUE QueueManager_singleton_connect_ensure(VALUE self)
  *   * Default Value:
  *       WMQ::MQXPT_TCP
  *
+ * * :use_system_connection_data => Boolean
+ *   * Used when you want to initialise a client connection, but you want
+ *   * to obtain the connection_name and channel_name from one of the system
+ *   * configuration methods. These being: mqclient.ini file, MQSERVER ENV
+ *   * variable or CCDT.
+ *
  * For the Advanced Client Connection parameters, please see the WebSphere MQ documentation
  *
  * Note:
