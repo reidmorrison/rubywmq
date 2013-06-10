@@ -50,6 +50,7 @@ static ID ID_ssl_cipher_spec;
 static ID ID_ssl_peer_name;
 static ID ID_keep_alive_interval;
 static ID ID_crypto_hardware;
+static ID ID_use_system_connection_data;
 
 /* MQSCO ID's */
 static ID ID_key_repository;
@@ -74,26 +75,27 @@ void QueueManager_id_init(void)
     ID_message              = rb_intern("message");
 
     /* MQCD ID's */
-    ID_channel_name         = rb_intern("channel_name");
-    ID_transport_type       = rb_intern("transport_type");
-    ID_mode_name            = rb_intern("mode_name");
-    ID_tp_name              = rb_intern("tp_name");
-    ID_security_exit        = rb_intern("security_exit");
-    ID_send_exit            = rb_intern("send_exit");
-    ID_receive_exit         = rb_intern("receive_exit");
-    ID_max_msg_length       = rb_intern("max_msg_length");
-    ID_security_user_data   = rb_intern("security_user_data");
-    ID_send_user_data       = rb_intern("send_user_data");
-    ID_receive_user_data    = rb_intern("receive_user_data");
-    ID_user_identifier      = rb_intern("user_identifier");
-    ID_password             = rb_intern("password");
-    ID_connection_name      = rb_intern("connection_name");
-    ID_heartbeat_interval   = rb_intern("heartbeat_interval");
-    ID_long_remote_user_id  = rb_intern("long_remote_user_id");
-    ID_remote_security_id   = rb_intern("remote_security_id");
-    ID_ssl_cipher_spec      = rb_intern("ssl_cipher_spec");
-    ID_ssl_peer_name        = rb_intern("ssl_peer_name");
-    ID_keep_alive_interval  = rb_intern("keep_alive_interval");
+    ID_channel_name                = rb_intern("channel_name");
+    ID_transport_type              = rb_intern("transport_type");
+    ID_mode_name                   = rb_intern("mode_name");
+    ID_tp_name                     = rb_intern("tp_name");
+    ID_security_exit               = rb_intern("security_exit");
+    ID_send_exit                   = rb_intern("send_exit");
+    ID_receive_exit                = rb_intern("receive_exit");
+    ID_max_msg_length              = rb_intern("max_msg_length");
+    ID_security_user_data          = rb_intern("security_user_data");
+    ID_send_user_data              = rb_intern("send_user_data");
+    ID_receive_user_data           = rb_intern("receive_user_data");
+    ID_user_identifier             = rb_intern("user_identifier");
+    ID_password                    = rb_intern("password");
+    ID_connection_name             = rb_intern("connection_name");
+    ID_heartbeat_interval          = rb_intern("heartbeat_interval");
+    ID_long_remote_user_id         = rb_intern("long_remote_user_id");
+    ID_remote_security_id          = rb_intern("remote_security_id");
+    ID_ssl_cipher_spec             = rb_intern("ssl_cipher_spec");
+    ID_ssl_peer_name               = rb_intern("ssl_peer_name");
+    ID_keep_alive_interval         = rb_intern("keep_alive_interval");
+    ID_use_system_connection_data  = rb_intern("use_system_connection_data");
 
     /* MQSCO ID's */
     ID_key_repository       = rb_intern("key_repository");
@@ -243,12 +245,27 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
      * All Client connection parameters are ignored if connection_name is missing
      */
 #ifdef MQCNO_VERSION_2
-    if(!NIL_P(rb_hash_aref(hash, ID2SYM(ID_connection_name))))
+    int use_system_connection_data = (rb_hash_aref(hash, ID2SYM(ID_use_system_connection_data)) == Qtrue) ? 1 : 0;
+
+    if(!NIL_P(rb_hash_aref(hash, ID2SYM(ID_connection_name))) || use_system_connection_data)
     {
         PMQCD pmqcd = &pqm->client_conn;              /* Process MQCD */
         pqm->is_client_conn = 1;                      /* Set to Client connection */
 
-        WMQ_HASH2MQCHARS(hash,connection_name,             pmqcd->ConnectionName)
+        if(use_system_connection_data)
+        {
+            /*
+             * Use system defined connection data rather than explicitly providing a
+             * connection name. This is used with CCDT, the MQSERVER ENV var or the
+             * mqclient.ini file
+             */
+            pqm->connect_options.ClientConnPtr = NULL;
+        }
+        else
+        {
+            WMQ_HASH2MQCHARS(hash,connection_name,             pmqcd->ConnectionName)
+        }
+
         WMQ_HASH2MQLONG (hash,transport_type,              pmqcd->TransportType)
         WMQ_HASH2MQCHARS(hash,mode_name,                   pmqcd->ModeName)
         WMQ_HASH2MQCHARS(hash,tp_name,                     pmqcd->TpName)
@@ -1170,6 +1187,12 @@ static VALUE QueueManager_singleton_connect_ensure(VALUE self)
  *
  *   * Default Value:
  *       WMQ::MQXPT_TCP
+ *
+ * * :use_system_connection_data => Boolean
+ *   * Used when you want to initialise a client connection, but you want
+ *   * to obtain the connection_name and channel_name from one of the system
+ *   * configuration methods. These being: mqclient.ini file, MQSERVER ENV
+ *   * variable or CCDT.
  *
  * For the Advanced Client Connection parameters, please see the WebSphere MQ documentation
  *
