@@ -179,7 +179,7 @@ static MQLONG Queue_extract_open_options(VALUE hash, VALUE name)
     else if (!mq_open_options)
     {
         rb_raise(rb_eArgError,
-                 "Either :mode or :options is required. Both are missing from hash passed to initialize() for Queue: %s",
+                 "Either :mode or :open_options is required. Both are missing from the parameters passed to initialize() for Queue: %s",
                  RSTRING_PTR(name));
     }
 
@@ -1120,6 +1120,9 @@ static VALUE Queue_singleton_open_ensure(VALUE queue)
  *       * Note: For now it is also necessary to specify these options when calling
  *         WMQ::Queue#each. A change will be made to each to address this.
  *          Equivalent to: MQOO_BROWSE
+ *     * Default: None.
+ *       If no :mode is supplied, then :open_options must be supplied.
+ *       In this way any custom combination of open options can be supplied.
  *
  * Optional Parameters
  * * :fail_if_quiescing => true or false
