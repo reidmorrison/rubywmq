@@ -208,6 +208,17 @@ Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerw
 
 #### Installation Errors
 
+Supply your MQ Includes and lib with the corresponding compiler options
+
+    gem install rubywmq --platform=ruby -- --with-mqm-include=C:\path\to\include
+
+Important notice :
+If your include Path contains spaces, encapsulate the whole option in '' like this
+
+    gem install rubywmq --platform=ruby -- '--with-mqm-include="C:\path with spaces\include"'
+
+###DEPRECATED###
+
 Use this command to find the directory in which the gems are installed
 
     gem env
