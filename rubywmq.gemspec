@@ -1,8 +1,5 @@
 $:.push File.expand_path("../lib", __FILE__)
 
-# Maintain your gem's version:
-require 'rubywmq/version'
-
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |spec|
   # Exclude locally compiled files since they are platform specific
@@ -20,11 +17,11 @@ Gem::Specification.new do |spec|
   ]
 
   spec.name        = 'rubywmq'
-  spec.version     = WMQ::VERSION
+  spec.version     = '2.0.3'
   spec.platform    = Gem::Platform::RUBY
-  spec.authors     = ['Reid Morrison', 'Edwin Fine']
-  spec.email       = ['reidmo@gmail.com']
-  spec.homepage    = 'https://github.com/reidmorrison/rubywmq'
+  spec.authors     = ['Reid Morrison', 'Edwin Fine', 'Christian Moniatis']
+  spec.email       = ['christian.moniatis@gmail.com']
+  spec.homepage    = 'https://github.com/zeroalpha/rubywmq'
   spec.summary     = "Native Ruby interface into WebSphere MQ"
   spec.description = "RubyWMQ is a high performance native Ruby interface into WebSphere MQ."
   spec.files       = Dir["lib/**/*", "LICENSE.txt", "Rakefile", "README.md"]
