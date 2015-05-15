@@ -115,7 +115,7 @@ END_OF_STRING
       str << "\n# #{item[0]}\n"
       str << GenerateConst.rb_const("#{path}/#{item[1]}", item[2], item[3])
     end
-    GenerateConst.extract_const(path+'cmqc.h', 'MQ', /Queue\s+Attributes/, /General\s+Constants/).each do |item|
+    GenerateConst.extract_const(path+'cmqc.h', 'MQ', /Queue\s+Attributes/, /typedef\s+struct/).each do |item|
       str << "   %-30s = #{item[1]}\n" % item[0]
     end
     str << "# Admin constants from cmqcfc.h\n"
