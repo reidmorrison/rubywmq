@@ -22,7 +22,6 @@ have_header('cmqc.h')
 
 # Check for WebSphere MQ Server library
 unless (RUBY_PLATFORM =~ /win|mingw/i) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)
-  puts RUBY_PLATFORM
   have_library('mqm')
 end
 
