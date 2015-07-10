@@ -238,7 +238,7 @@ VALUE Message_initialize(int argc, VALUE *argv, VALUE self)
         val = rb_hash_aref(parms, ID2SYM(ID_descriptor));
         if (NIL_P(val))
         {
-            rb_iv_set(self, "@headers", rb_hash_new());
+            rb_iv_set(self, "@descriptor", rb_hash_new());
         }
         else
         {
