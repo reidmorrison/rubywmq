@@ -2,18 +2,18 @@ require 'erb'
 
 class GenerateStructs
 
-  @@field_ignore_list = [ 'StrucId', 'Version' , 'StrucLength']
+  @@field_ignore_list = ['StrucId', 'Version', 'StrucLength']
 
   # Store path to WebSphere MQ Structures
-  def initialize(wmq_includepath, templates_path='.')
-    @path = wmq_includepath
+  def initialize(wmq_includepath, templates_path = '.')
+    @path           = wmq_includepath
     @templates_path = templates_path
   end
 
   def extract_struct (filename, struct_name)
     properties_list = []
-    line_number = 0
-    found = false
+    line_number     = 0
+    found           = false
     File.open(filename) do |file|
       file.each do |line|
         line_number += 1
@@ -26,7 +26,7 @@ class GenerateStructs
             return(properties_list) if line =~ /^\s*\};/
             match = /\s*(MQ\w+)\s+(\w+);/.match(line)
             if match
-              type = match[1]
+              type    = match[1]
               element = match[2]
               properties_list.push([type, element])
             end
@@ -39,22 +39,23 @@ class GenerateStructs
 
   def rubyize_name(name)
     name.gsub(/::/, '/').
-    gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-    gsub(/([a-z\d])([A-Z])/,'\1_\2').
-    tr("-", "_").
-    downcase
+      gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').
+      gsub(/([a-z\d])([A-Z])/, '\1_\2').
+      tr("-", "_").
+      downcase
   end
 
   def self.test_rubyize_name
     test = self.new
-    [['a', 'a'],
-    ['A', 'a'],
-    ['Aa', 'aa'],
-    ['AA', 'aa'],
-    ['AaA', 'aa_a'],
-    ['MyFieldName', 'my_field_name'],
-    ['MMyFieldNName', 'm_my_field_n_name'],
-    ['ABCdefGHIjKlMnOPQrSTuvwxYz', 'ab_cdef_gh_ij_kl_mn_op_qr_s_tuvwx_yz']
+    [
+      ['a', 'a'],
+      ['A', 'a'],
+      ['Aa', 'aa'],
+      ['AA', 'aa'],
+      ['AaA', 'aa_a'],
+      ['MyFieldName', 'my_field_name'],
+      ['MMyFieldNName', 'm_my_field_n_name'],
+      ['ABCdefGHIjKlMnOPQrSTuvwxYz', 'ab_cdef_gh_ij_kl_mn_op_qr_s_tuvwx_yz']
     ].each do |item|
       str = test.rubyize_name(item[0])
       raise("rubyize_name('#{item[0]}') == #{str} != '#{item[1]})") if str != item[1]
@@ -68,7 +69,7 @@ class GenerateStructs
   def generate(target_filename = 'wmq_structs.c')
     erb = nil
     File.open(@templates_path+'/wmq_structs.erb') { |file| erb = ERB.new(file.read) }
-    File.open(target_filename, 'w') {|file| file.write(generate_structs(erb)) }
+    File.open(target_filename, 'w') { |file| file.write(generate_structs(erb)) }
     puts "Generated #{target_filename}"
   end
 end

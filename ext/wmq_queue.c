@@ -1,19 +1,3 @@
-/* --------------------------------------------------------------------------
- *  Copyright 2006 J. Reid Morrison
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- * --------------------------------------------------------------------------*/
-
 #include "wmq.h"
 /* --------------------------------------------------
  * Initialize Ruby ID's for Queue Class
@@ -228,16 +212,6 @@ void Queue_extract_put_message_options(VALUE hash, PMQPMO ppmo)
     return;
 }
 
-/* Future Use:
- *  *:q_name             => ['q_name1', 'q_name2'] # Not implemented: Future Use!!
- *  *:q_name             => [ {queue_manager=>'QMGR_name',
- *                            queue        =>'queue name1'}, # Future Use!!
- *                            { ... }
- *                          ]
- *  *:resolved           => { queue => 'Resolved queue name',
- *                           queue_manager => 'Resolved queue manager name' }
- */
-
 /*
  * call-seq:
  *   new(...)
@@ -374,17 +348,21 @@ VALUE Queue_initialize(VALUE self, VALUE hash)
  *
  * Example:
  *   require 'wmq/wmq_client'
- *   queue_manager = WMQ::QueueManager.new(:q_mgr_name     =>'REID',
- *                                         :connection_name=>'localhost(1414)')
+ *   queue_manager = WMQ::QueueManager.new(
+ *       q_mgr_name:      'REID',
+ *       connection_name: 'localhost(1414)'
+ *     )
  *   begin
  *     queue_manager.connect
  *
  *     # Create Queue and clear any messages from the queue
- *     in_queue = WMQ::Queue.new(:queue_manager =>queue_manager,
- *                               :mode          =>:input,
- *                               :dynamic_q_name=>'UNIT.TEST',
- *                               :q_name        =>'SYSTEM.DEFAULT.MODEL.QUEUE',
- *                               :fail_if_exists=>false)
+ *     in_queue = WMQ::Queue.new(
+ *         queue_manager:  'QMGR',
+ *         mode:           :input,
+ *         dynamic_q_name: 'UNIT.TEST',
+ *         q_name:         'SYSTEM.DEFAULT.MODEL.QUEUE',
+ *         fail_if_exists: false
+ *       )
  *     begin
  *       in_queue.open
  *       in_queue.each { |message| p message.data }
@@ -392,7 +370,7 @@ VALUE Queue_initialize(VALUE self, VALUE hash)
  *       # Note: Very important: Must close the queue explicitly
  *       in_queue.close
  *     end
- *   rescue => exc
+ *   rescue Exception => exc
  *     queue_manager.backout
  *     raise exc
  *   ensure
@@ -576,34 +554,34 @@ VALUE Queue_close(VALUE self)
  * Parameters:
  * * a Hash consisting of one or more of the named parameters
  * * Summary of parameters and their WebSphere MQ equivalents:
- *  queue.get(                                             # WebSphere MQ Equivalents:
- *   :message            => my_message,                    # n/a : Instance of Message
- *   :sync               => false,                         # MQGMO_SYNCPOINT
- *   :wait               => 0,                             # MQGMO_WAIT, duration in ms
- *   :match              => WMQ::MQMO_NONE,                # MQMO_*
- *   :convert            => false,                         # MQGMO_CONVERT
- *   :fail_if_quiescing  => true                           # MQOO_FAIL_IF_QUIESCING
- *   :options            => WMQ::MQGMO_FAIL_IF_QUIESCING   # MQGMO_*
+ *  queue.get(                                         # WebSphere MQ Equivalents:
+ *   message:           my_message,                    # n/a : Instance of Message
+ *   sync:              false,                         # MQGMO_SYNCPOINT
+ *   wait:              0,                             # MQGMO_WAIT, duration in ms
+ *   match:             WMQ::MQMO_NONE,                # MQMO_*
+ *   convert:           false,                         # MQGMO_CONVERT
+ *   fail_if_quiescing: true                           # MQOO_FAIL_IF_QUIESCING
+ *   options:           WMQ::MQGMO_FAIL_IF_QUIESCING   # MQGMO_*
  *   )
  *
  * Mandatory Parameters
- * * :message => Message
+ * * :message [Message]
  *   * An instance of the WMQ::Message
  *
  * Optional Parameters
- * * :sync => true or false
+ * * :sync [true|false]
  *   * Determines whether the get is performed under synchpoint.
  *     I.e. Under the current unit of work
  *      Default: false
  *
- * * :wait => FixNum
+ * * :wait [Integer]
  *   * The time in milli-seconds to wait for a message if one is not immediately available
  *     on the queue
  *   * Note: Under the covers the put option MQGMO_WAIT is automatically set when :wait
  *     is supplied
  *      Default: Wait forever
  *
- * * :match => FixNum
+ * * :match [Integer]
  *   * One or more of the following values:
  *       WMQ::MQMO_MATCH_MSG_ID
  *       WMQ::MQMO_MATCH_CORREL_ID
@@ -613,24 +591,24 @@ VALUE Queue_close(VALUE self)
  *       WMQ::MQMO_MATCH_MSG_TOKEN
  *       WMQ::MQMO_NONE
  *   * Multiple values can be or'd together. E.g.
- *       :match=>WMQ::MQMO_MATCH_MSG_ID | WMQ::MQMO_MATCH_CORREL_ID
+ *       match: WMQ::MQMO_MATCH_MSG_ID | WMQ::MQMO_MATCH_CORREL_ID
  *   * Please see the WebSphere MQ documentation for more details on the above options
  *      Default: WMQ::MQMO_MATCH_MSG_ID | WMQ::MQMO_MATCH_CORREL_ID
  *
- * * :convert => true or false
+ * * :convert [true|false]
  *   * When true, convert results in messages being converted to the local code page.
  *     E.g. When an EBCDIC text message from a mainframe is received, it will be converted
  *     to ASCII before passing the message data to the application.
  *      Default: false
  *
- * * :fail_if_quiescing => true or false
+ * * :fail_if_quiescing [true|false]
  *   * Determines whether the WMQ::Queue#get call will fail if the queue manager is
  *     in the process of being quiesced.
  *   * Note: This interface differs from other WebSphere MQ interfaces,
  *     they do not default to true.
  *      Default: true
  *
- * * :options => Fixnum (Advanced MQ Use only)
+ * * :options [Integer] (Advanced MQ Use only)
  *   * Numeric field containing any of the MQ Get message options or'd together
  *     * E.g. :options => WMQ::MQGMO_SYNCPOINT_IF_PERSISTENT | WMQ::MQGMO_MARK_SKIP_BACKOUT
  *   * Note: If :options is supplied, it is applied first, then the above parameters are
@@ -669,10 +647,10 @@ VALUE Queue_close(VALUE self)
  * Example:
  *   require 'wmq/wmq'
  *
- *   WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
- *     qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:input) do |queue|
+ *   WMQ::QueueManager.connect(q_mgr_name: 'REID') do |qmgr|
+ *     qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :input) do |queue|
  *       message = WMQ::Message.new
- *       if queue.get(:message => message)
+ *       if queue.get(message: message)
  *         puts "Data Received: #{message.data}"
  *       else
  *         puts 'No message available'
@@ -825,16 +803,16 @@ VALUE Queue_get(VALUE self, VALUE hash)
  * Parameters:
  * * A Hash consisting of one or more of the named parameters
  * * Summary of parameters and their WebSphere MQ equivalents
- *  queue.put(                                             # WebSphere MQ Equivalents:
- *   :message            => my_message,                    # n/a : Instance of Message
- *   :data               => "Hello World",                 # n/a : Data to send
- *   :sync               => false,                         # MQGMO_SYNCPOINT
- *   :new_id             => true,                          # MQPMO_NEW_MSG_ID & MQPMO_NEW_CORREL_ID
- *   :new_msg_id         => true,                          # MQPMO_NEW_MSG_ID
- *   :new_correl_id      => true,                          # MQPMO_NEW_CORREL_ID
- *   :fail_if_quiescing  => true,                          # MQOO_FAIL_IF_QUIESCING
- *   :options            => WMQ::MQPMO_FAIL_IF_QUIESCING   # MQPMO_*
- *   )
+ *  queue.put(                                          # WebSphere MQ Equivalents:
+ *    message:           my_message,                    # n/a : Instance of Message
+ *    data:              'Hello World',                 # n/a : Data to send
+ *    sync:              false,                         # MQGMO_SYNCPOINT
+ *    new_id:            true,                          # MQPMO_NEW_MSG_ID & MQPMO_NEW_CORREL_ID
+ *    new_msg_id:        true,                          # MQPMO_NEW_MSG_ID
+ *    new_correl_id:     true,                          # MQPMO_NEW_CORREL_ID
+ *    fail_if_quiescing: true,                          # MQOO_FAIL_IF_QUIESCING
+ *    options:           WMQ::MQPMO_FAIL_IF_QUIESCING   # MQPMO_*
+ *  )
  *
  * Mandatory Parameters:
  *
@@ -925,22 +903,22 @@ VALUE Queue_get(VALUE self, VALUE hash)
  * Example:
  *   require 'wmq/wmq_client'
  *
- *   WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
- *     qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:output) do |queue|
+ *   WMQ::QueueManager.connect(q_mgr_name: 'REID', connection_name: 'localhost(1414)') do |qmgr|
+ *     qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :output) do |queue|
  *
  *       # First message
- *       queue.put(:data => 'Hello World')
+ *       queue.put(data: 'Hello World')
  *
  *       # Set Format of message to string
  *       message = WMQ::Message.new
  *       message.descriptor[:format] = WMQ::MQFMT_STRING
- *       queue.put(:message=>message, :data => 'Hello Again')
+ *       queue.put(message: message, data: 'Hello Again')
  *
  *       # Or, pass the data in the message
  *       message = WMQ::Message.new
  *       message.descriptor[:format] = WMQ::MQFMT_STRING
  *       message.data = 'Hello Again'
- *       queue.put(:message=>message)
+ *       queue.put(message: message)
  *     end
  *   end
  */
@@ -1048,20 +1026,20 @@ static VALUE Queue_singleton_open_ensure(VALUE queue)
  * Parameters:
  * * Since the number of parameters can vary dramatically, all parameters are passed by name in a hash
  * * Summary of parameters and their WebSphere MQ equivalents:
- *  queue = Queue.new(                                     # WebSphere MQ Equivalents:
- *   :queue_manager      => queue_manager,                 # n/a : Instance of QueueManager
- *   :q_name             => 'Queue Name',                  # MQOD.ObjectName
- *   :q_name             => { queue_manager=>'QMGR_name',  # MQOD.ObjectQMgrName
- *                            q_name       =>'q_name'}
- *   :mode               => :input or :input_shared or :input_exclusive or :output,
- *   :fail_if_quiescing  => true                           # MQOO_FAIL_IF_QUIESCING
- *   :fail_if_exists     => true, # For dynamic queues, fail if it already exists
- *   :open_options       => WMQ::MQOO_BIND_ON_OPEN | ...   # MQOO_*
- *   :close_options      => WMQ::MQCO_DELETE_PURGE         # MQCO_*
- *   :dynamic_q_name     => 'Name of Dynamic Queue'        # MQOD.DynamicQName
- *   :alternate_user_id  => 'userid',                      # MQOD.AlternateUserId
- *   :alternate_security_id => ''                          # MQOD.AlternateSecurityId
- *   )
+ *  queue = Queue.new(                                      # WebSphere MQ Equivalents:
+ *    queue_manager:         queue_manager,                 # n/a : Instance of QueueManager
+ *    q_name:                'Queue Name',                  # MQOD.ObjectName
+ *    q_name:                { queue_manager:'QMGR_name',   # MQOD.ObjectQMgrName
+ *                             q_name:       'q_name'}
+ *    mode:                  :input or :input_shared or :input_exclusive or :output,
+ *    fail_if_quiescing:     true                           # MQOO_FAIL_IF_QUIESCING
+ *    fail_if_exists:        true, # For dynamic queues, fail if it already exists
+ *    open_options:          WMQ::MQOO_BIND_ON_OPEN | ...   # MQOO_*
+ *    close_options:         WMQ::MQCO_DELETE_PURGE         # MQCO_*
+ *    dynamic_q_name:        'Name of Dynamic Queue'        # MQOD.DynamicQName
+ *    alternate_user_id:     'userid',                      # MQOD.AlternateUserId
+ *    alternate_security_id: ''                             # MQOD.AlternateSecurityId
+ *  )
  *
  * Mandatory Parameters
  * * :queue_manager
@@ -1201,11 +1179,13 @@ static VALUE Queue_singleton_open_ensure(VALUE queue)
  *   # Put 10 Hello World messages onto a queue
  *   require 'wmq/wmq_client'
  *
- *   WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
- *     WMQ::Queue.open(:queue_manager=>qmgr,
- *                     :q_name       =>'TEST.QUEUE',
- *                     :mode         =>:output) do |queue|
- *       10.times { |counter| queue.put(:data => "Hello World #{counter}") }
+ *   WMQ::QueueManager.connect(q_mgr_name: 'REID', connection_name: 'localhost(1414)') do |qmgr|
+ *     WMQ::Queue.open(
+ *       queue_manager: qmgr,
+ *       q_name:        'TEST.QUEUE',
+ *       mode:          :output
+ *     ) do |queue|
+ *       10.times { |counter| queue.put(data: "Hello World #{counter}") }
  *     end
  *   end
  */
@@ -1250,8 +1230,8 @@ VALUE Queue_singleton_open(int argc, VALUE *argv, VALUE self)
  * Example:
  *   require 'wmq/wmq'
  *
- *   WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
- *     qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:input) do |queue|
+ *   WMQ::QueueManager.connect(q_mgr_name:'REID') do |qmgr|
+ *     qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :input) do |queue|
  *       queue.each do |message|
  *         puts "Data Received: #{message.data}"
  *       end

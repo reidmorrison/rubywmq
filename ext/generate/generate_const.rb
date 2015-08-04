@@ -4,11 +4,16 @@ class GenerateConst
   # Extract Constants from Header files
   def GenerateConst.extract_const(filename, const_prefix, start_exp=nil, end_exp=nil)
     @constants = []
-    active = if start_exp then false else true end    # Sure there is a better way
+    active     =
+      if start_exp then
+        false
+      else
+        true
+      end # Sure there is a better way
     File.open(filename) do |file|
       file.each do |line|
         line.rstrip!
-        if line.length > 0   # Skip empty lines
+        if line.length > 0 # Skip empty lines
           if active
             break if start_exp && line.match(end_exp)
             # Skip Comment lines, then check for a match
@@ -47,8 +52,8 @@ class GenerateConst
   def GenerateConst.config(filename, prefix)
     str = "# WMQ::QueueManager execute commands\n"
     str << "execute_commands:\n"
-    GenerateConst.extract_const(filename,prefix).each do |item|
-      name = item[0].gsub(prefix,'').downcase
+    GenerateConst.extract_const(filename, prefix).each do |item|
+      name = item[0].gsub(prefix, '').downcase
       str << "  :%-26s " % "#{name}:"
       match = name.match(/\w+?_([\w_]+)/)
       str << ":#{match[1]}" if match
@@ -68,28 +73,29 @@ class GenerateConst
 ################################################################################
 module WMQ
 END_OF_STRING
-    [ ['Connect Options','cmqc.h','MQCNO_',/(VERSION)|(CONN_TAG)|(HANDLE_SHARE)|(_LENGTH)/],
-      ['Open Options', 'cmqc.h','MQOO_' ],
-      ['Close Options', 'cmqc.h','MQCO_'],
-      ['Match Options', 'cmqc.h','MQMO_'],
-      ['Message Format Options', 'cmqc.h','MQFMT_',/(_ARRAY)/],
-      ['Get Message Options', 'cmqc.h','MQGMO_',/(VERSION)|(LENGTH)|(MQGMO_BROWSE_HANDLE)|(MQGMO_BROWSE_CO_OP)/],
-      ['Transport Types', 'cmqxc.h','MQXPT_'] ,
+    [
+      ['Connect Options', 'cmqc.h', 'MQCNO_', /(VERSION)|(CONN_TAG)|(HANDLE_SHARE)|(_LENGTH)/],
+      ['Open Options', 'cmqc.h', 'MQOO_'],
+      ['Close Options', 'cmqc.h', 'MQCO_'],
+      ['Match Options', 'cmqc.h', 'MQMO_'],
+      ['Message Format Options', 'cmqc.h', 'MQFMT_', /(_ARRAY)/],
+      ['Get Message Options', 'cmqc.h', 'MQGMO_', /(VERSION)|(LENGTH)|(MQGMO_BROWSE_HANDLE)|(MQGMO_BROWSE_CO_OP)/],
+      ['Transport Types', 'cmqxc.h', 'MQXPT_'],
       ['Report Options', 'cmqc.h', 'MQRO_'],
       ['Message Types', 'cmqc.h', 'MQMT_'],
       ['Expiry', 'cmqc.h', 'MQEI_'],
       ['Feedback Values', 'cmqc.h', 'MQFB_'],
-      ['Encoding Values', 'cmqc.h', 'MQENC_',/(MQENC_NORMAL)|(MQENC_REVERSED)|(MQENC_S390)|(MQENC_TNS)/],
+      ['Encoding Values', 'cmqc.h', 'MQENC_', /(MQENC_NORMAL)|(MQENC_REVERSED)|(MQENC_S390)|(MQENC_TNS)/],
       ['Coded Character Set Identifiers', 'cmqc.h', 'MQCCSI_'],
       ['Priority', 'cmqc.h', 'MQPRI_'],
       ['Persistence', 'cmqc.h', 'MQPER_'],
       ['Put Application Types', 'cmqc.h', 'MQAT_'],
       ['Message Flags', 'cmqc.h', 'MQMF_'],
       ['Original Length', 'cmqc.h', 'MQOL_'],
-      ['Put Message Options', 'cmqc.h', 'MQPMO_',/(VERSION)|(LENGTH)/],
-      ['Put Message Record Fields', 'cmqc.h', 'MQPMRF_',/(VERSION)|(LENGTH)/],
-      ['Reason Codes', 'cmqc.h','MQRC_'],
-      ].each do |item|
+      ['Put Message Options', 'cmqc.h', 'MQPMO_', /(VERSION)|(LENGTH)/],
+      ['Put Message Record Fields', 'cmqc.h', 'MQPMRF_', /(VERSION)|(LENGTH)/],
+      ['Reason Codes', 'cmqc.h', 'MQRC_'],
+    ].each do |item|
       str << "\n# #{item[0]}\n"
       str << GenerateConst.rb_const("#{path}/#{item[1]}", item[2], item[3])
     end
@@ -108,10 +114,11 @@ END_OF_STRING
 module WMQ
 END_OF_STRING
     str << "# Admin constants from cmqc.h\n"
-    [ ['Object Types', 'cmqc.h', 'MQOT_'],
+    [
+      ['Object Types', 'cmqc.h', 'MQOT_'],
       ['Security Identifier Types', 'cmqc.h', 'MQSIDT_'],
       ['Channel Types', 'cmqxc.h', 'MQCHT_'],
-      ].each do |item|
+    ].each do |item|
       str << "\n# #{item[0]}\n"
       str << GenerateConst.rb_const("#{path}/#{item[1]}", item[2], item[3])
     end
@@ -126,9 +133,9 @@ END_OF_STRING
   end
 
   def self.generate(path, target_path='')
-    File.open(File.join(target_path,'constants_admin.rb'), 'w') {|file| file.write(GenerateConst.admin_consts(path))}
+    File.open(File.join(target_path, 'constants_admin.rb'), 'w') { |file| file.write(GenerateConst.admin_consts(path)) }
     puts 'Generated wmq_const_admin.rb'
-    File.open(File.join(target_path,'constants.rb'), 'w') {|file| file.write(GenerateConst.wmq_const(path))}
+    File.open(File.join(target_path, 'constants.rb'), 'w') { |file| file.write(GenerateConst.wmq_const(path)) }
     puts 'Generated wmq_const.rb'
   end
 end

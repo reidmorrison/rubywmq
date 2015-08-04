@@ -1,71 +1,71 @@
 <%
-    symbols = {
-          'descriptor='=>nil,
-          'headers='=>nil,
-          'data='=>nil,
-          'header_type'=>nil,
-          'to_s'=>nil,
-          'xml'=>nil,
-          'name_value'=>nil,
-    }
-    wmq_structs = [
-      # Message Descriptor
-      {:file=>'cmqc.h', :struct=>'MQMD'},
+   symbols = {
+       'descriptor=' => nil,
+       'headers='    => nil,
+       'data='       => nil,
+       'header_type' => nil,
+       'to_s'        => nil,
+       'xml'         => nil,
+       'name_value'  => nil,
+   }
+   wmq_structs = [
+       # Message Descriptor
+       { file: 'cmqc.h', struct: 'MQMD' },
 
-      # Message Descriptor 1
-      {:file=>'cmqc.h', :struct=>'MQMD1', :other_keys=>[:remote_q_name, :remote_q_mgr_name]},
+       # Message Descriptor 1
+       { file: 'cmqc.h', struct: 'MQMD1', other_keys: [:remote_q_name, :remote_q_mgr_name] },
 
-      # Rules and formatting header2
-      {:file=>'cmqc.h', :struct=>'MQRFH2', :header=>'rf_header_2', :struct_id=>'MQRFH_STRUC_ID',
-       :other_keys=>[:xml],
-       :custom=>true }, # Implement custom Message_build_rf_header_2 and Message_deblock_rf_header_2
+       # Rules and formatting header2
+       { file:         'cmqc.h', struct: 'MQRFH2', header: 'rf_header_2', struct_id: 'MQRFH_STRUC_ID',
+           other_keys: [:xml],
+           custom:     true }, # Implement custom Message_build_rf_header_2 and Message_deblock_rf_header_2
 
-      # Rules and formatting header
-      {:file=>'cmqc.h', :struct=>'MQRFH', :header=>'rf_header', :other_keys=>[:name_value],
-       :custom=>true }, # Implement custom Message_build_rf_header and Message_deblock_rf_header
+       # Rules and formatting header
+       { file:     'cmqc.h', struct: 'MQRFH', header: 'rf_header', other_keys: [:name_value],
+           custom: true }, # Implement custom Message_build_rf_header and Message_deblock_rf_header
 
-      # Dead Letter Header
-      {:file=>'cmqc.h', :struct=>'MQDLH', :header=>'dead_letter_header',
-       :defaults=>'MQDLH_DEF.CodedCharSetId = MQCCSI_INHERIT;'},
+       # Dead Letter Header
+       { file:       'cmqc.h', struct: 'MQDLH', header: 'dead_letter_header',
+           defaults: 'MQDLH_DEF.CodedCharSetId = MQCCSI_INHERIT;' },
 
-      # CICS bridge header
-      {:file=>'cmqc.h', :struct=>'MQCIH', :header=>'cics'},
+       # CICS bridge header
+       { file: 'cmqc.h', struct: 'MQCIH', header: 'cics' },
 
-      # Distribution header
-      {:file=>'cmqc.h', :struct=>'MQDH',  :header=>'dist_header'},
+       # Distribution header
+       { file: 'cmqc.h', struct: 'MQDH', header: 'dist_header' },
 
-      # IMS information header
-      {:file=>'cmqc.h', :struct=>'MQIIH', :header=>'ims'},
+       # IMS information header
+       { file: 'cmqc.h', struct: 'MQIIH', header: 'ims' },
 
-      # Reference message header (send large files over channels)
-      {:file=>'cmqc.h', :struct=>'MQRMH', :header=>'ref_msg_header'},
+       # Reference message header (send large files over channels)
+       { file: 'cmqc.h', struct: 'MQRMH', header: 'ref_msg_header' },
 
-      # Trigger Message
-      {:file=>'cmqc.h', :struct=>'MQTM', :header=>'trigger', :format=>false},
+       # Trigger Message
+       { file: 'cmqc.h', struct: 'MQTM', header: 'trigger', format: false },
 
-      # Trigger Message 2 (character format)
-      {:file=>'cmqc.h', :struct=>'MQTMC2'},
+       # Trigger Message 2 (character format)
+       { file: 'cmqc.h', struct: 'MQTMC2' },
 
-      # Work Information header
-      {:file=>'cmqc.h', :struct=>'MQWIH', :header=>'work_info_header'},
+       # Work Information header
+       { file: 'cmqc.h', struct: 'MQWIH', header: 'work_info_header' },
 
-      # Transmission-queue header - Todo: Need to deal with MQMDE
-      {:file=>'cmqc.h', :struct=>'MQXQH', :header=>'xmit_q_header', :format=>'MsgDesc.Format'},
-    ]
+       # Transmission-queue header - Todo: Need to deal with MQMDE
+       { file: 'cmqc.h', struct: 'MQXQH', header: 'xmit_q_header', format: 'MsgDesc.Format' },
+   ]
 
-    wmq_structs.each do |struct|
-      # Parse WebSphere MQ 'C' Header file and extract elements
-      elements = extract_struct(@path+'/'+struct[:file], struct[:struct])
-      struct[:elements] = elements
+   wmq_structs.each do |struct|
+     # Parse WebSphere MQ 'C' Header file and extract elements
+     elements                = extract_struct(@path+'/'+struct[:file], struct[:struct])
+     struct[:elements]       = elements
 
-      # Add symbol for each struct name
-      symbols[struct[:header]]=nil if struct[:header]
+     # Add symbol for each struct name
+     symbols[struct[:header]]=nil if struct[:header]
 
-      # Add symbols for each element in C Struct
-      elements.each do |item|
-        symbols[rubyize_name(item[1])] = nil unless @@field_ignore_list.include?(item[1])
-      end
-    end
+     # Add symbols for each element in C Struct
+     elements.each do |item|
+       symbols[rubyize_name(item[1])] = nil unless @@field_ignore_list.include?(item[1])
+     end
+   end
 %>
 /* --------------------------------------------------------------------------
  *

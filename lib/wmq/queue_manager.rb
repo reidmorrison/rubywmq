@@ -6,11 +6,11 @@ module WMQ
     # Example
     #   require 'wmq/wmq'
     #   require 'wmq/wmq_const_admin'
-    #   WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
+    #   WMQ::QueueManager.connect(q_mgr_name: 'REID', connection_name: 'localhost(1414)') do |qmgr|
     #     qmgr.mqsc('dis ql(*)').each {|item| p item }
     #   end
     def mqsc(mqsc_text)
-      self.execute(:command=>:escape, :escape_type=>WMQ::MQET_MQSC, :escape_text=>mqsc_text).collect {|item| item[:escape_text] }
+      execute(command: :escape, escape_type: WMQ::MQET_MQSC, escape_text: mqsc_text).collect { |item| item[:escape_text] }
     end
 
     # Put a reply message back to the sender
@@ -44,19 +44,20 @@ module WMQ
       if parms[:request_message].descriptor[:msg_type] == WMQ::MQMT_REQUEST
         request = parms.delete(:request_message)
 
-        reply = parms[:message] ||= Message.new(:data=>parms[:data])
+        reply                         = parms[:message] ||= Message.new(data: parms[:data])
         reply.descriptor[:msg_type]   = WMQ::MQMT_REPLY
         reply.descriptor[:expiry]     = request.descriptor[:expiry]
         reply.descriptor[:priority]   = request.descriptor[:priority]
         reply.descriptor[:persistence]= request.descriptor[:persistence]
-        reply.descriptor[:format] = request.descriptor[:format]
+        reply.descriptor[:format]     = request.descriptor[:format]
 
         # Set Correlation Id based on report options supplied
-        if request.descriptor[:report] & WMQ::MQRO_PASS_CORREL_ID != 0
-          reply.descriptor[:correl_id] = request.descriptor[:correl_id]
-        else
-          reply.descriptor[:correl_id] = request.descriptor[:msg_id]
-        end
+        reply.descriptor[:correl_id]  =
+          if request.descriptor[:report] & WMQ::MQRO_PASS_CORREL_ID != 0
+            request.descriptor[:correl_id]
+          else
+            request.descriptor[:msg_id]
+          end
 
         # Set Message Id based on report options supplied
         if request.descriptor[:report] & WMQ::MQRO_PASS_MSG_ID != 0
@@ -83,24 +84,26 @@ module WMQ
     #   are retained.
     #
     def put_to_dead_letter_q(parms)
-      message = parms[:message] ||= Message.new(:data=>parms[:data])
-      dlh = {
-        :header_type     =>:dead_letter_header,
-        :reason          =>parms.delete(:reason),
-        :dest_q_name     =>parms.delete(:q_name),
-        :dest_q_mgr_name =>self.name}
+      message = parms[:message] ||= Message.new(data: parms[:data])
+      dlh     = {
+        header_type:     :dead_letter_header,
+        reason:          parms.delete(:reason),
+        dest_q_name:     parms.delete(:q_name),
+        dest_q_mgr_name: name
+      }
 
       message.headers.unshift(dlh)
-      parms[:q_name]='SYSTEM.DEAD.LETTER.QUEUE'  #TODO Should be obtained from QMGR config
-      return self.put(parms)
+      parms[:q_name] = 'SYSTEM.DEAD.LETTER.QUEUE' #TODO Should be obtained from QMGR config
+
+      put(parms)
     end
 
     # Expose Commands directly as Queue Manager methods
     def method_missing(name, *args)
       if args.size == 1
-        self.execute({:command=>name}.merge(args[0]))
+        execute({ command: name }.merge(args[0]))
       elsif args.size == 0
-        self.execute({:command=>name})
+        execute(command: name)
       else
         raise("Invalid arguments supplied to QueueManager#:#{name}, args:#{args}")
       end

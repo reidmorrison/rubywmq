@@ -1,19 +1,3 @@
-/*
- *  Copyright 2006 J. Reid Morrison
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
 #include "wmq.h"
 
 static ID ID_open;
@@ -401,7 +385,7 @@ VALUE QueueManager_initialize(VALUE self, VALUE hash)
  *
  * Throws:
  * * WMQ::WMQException if comp_code != MQCC_OK
- * * Except if :exception_on_error => false was supplied as a parameter
+ * * Except if exception_on_error:  false was supplied as a parameter
  *   to QueueManager.new
  */
 VALUE QueueManager_connect(VALUE self)
@@ -476,7 +460,7 @@ VALUE QueueManager_connect(VALUE self)
  *
  * Throws:
  * * WMQ::WMQException if comp_code != MQCC_OK
- * * Except if :exception_on_error => false was supplied as a parameter
+ * * Except if exception_on_error:  false was supplied as a parameter
  *   to QueueManager.new
  */
 VALUE QueueManager_disconnect(VALUE self)
@@ -526,7 +510,7 @@ VALUE QueueManager_disconnect(VALUE self)
  *
  * Note:
  * * commit will have no effect if all put and get operations were performed
- *   without specifying :sync => true
+ *   without specifying sync:  true
  *
  * Returns:
  * * true : On Success
@@ -537,7 +521,7 @@ VALUE QueueManager_disconnect(VALUE self)
  *
  * Throws:
  * * WMQ::WMQException if comp_code != MQCC_OK
- * * Except if :exception_on_error => false was supplied as a parameter
+ * * Except if exception_on_error:  false was supplied as a parameter
  *   to QueueManager.new
  */
 VALUE QueueManager_commit(VALUE self)
@@ -578,7 +562,7 @@ VALUE QueueManager_commit(VALUE self)
  *
  * Note:
  * * backout will have no effect if all put and get operations were performed
- *   without specifying :sync => true
+ *   without specifying sync:  true
  *
  * Returns:
  * * true : On Success
@@ -589,7 +573,7 @@ VALUE QueueManager_commit(VALUE self)
  *
  * Throws:
  * * WMQ::WMQException if comp_code != MQCC_OK
- * * Except if :exception_on_error => false was supplied as a parameter
+ * * Except if exception_on_error:  false was supplied as a parameter
  *   to QueueManager.new
  */
 VALUE QueueManager_backout(VALUE self)
@@ -628,7 +612,7 @@ VALUE QueueManager_backout(VALUE self)
  * resource such as a Database
  *
  * Starts a new unit of work under which put and get can be called with
- * with the parameter :sync => true
+ * with the parameter sync:  true
  *
  * Returns:
  * * true : On Success
@@ -639,7 +623,7 @@ VALUE QueueManager_backout(VALUE self)
  *
  * Throws:
  * * WMQ::WMQException if comp_code != MQCC_OK
- * * Except if :exception_on_error => false was supplied as a parameter
+ * * Except if exception_on_error:  false was supplied as a parameter
  *   to QueueManager.new
  */
 VALUE QueueManager_begin(VALUE self)
@@ -682,17 +666,17 @@ VALUE QueueManager_begin(VALUE self)
  *
  * Summary of parameters and their WebSphere MQ equivalents
  *  queue.get(                                             # WebSphere MQ Equivalents:
- *   :q_name             => 'Queue Name',                  # MQOD.ObjectName
- *   :q_name             => { queue_manager=>'QMGR_name',  # MQOD.ObjectQMgrName
- *                            q_name       =>'q_name'}
- *   :message            => my_message,                    # n/a : Instance of Message
- *   :data               => "Hello World",                 # n/a : Data to send
- *   :sync               => false,                         # MQGMO_SYNCPOINT
- *   :new_id             => true,                          # MQPMO_NEW_MSG_ID & MQPMO_NEW_CORREL_ID
- *   :new_msg_id         => true,                          # MQPMO_NEW_MSG_ID
- *   :new_correl_id      => true,                          # MQPMO_NEW_CORREL_ID
- *   :fail_if_quiescing  => true,                          # MQOO_FAIL_IF_QUIESCING
- *   :options            => WMQ::MQPMO_FAIL_IF_QUIESCING   # MQPMO_*
+ *    q_name:            'Queue Name',                  # MQOD.ObjectName
+ *    q_name:            { queue_manager=>'QMGR_name',  # MQOD.ObjectQMgrName
+ *                         q_name       =>'q_name'}
+ *    message:           my_message,                    # n/a : Instance of Message
+ *    data:              "Hello World",                 # n/a : Data to send
+ *    sync:              false,                         # MQGMO_SYNCPOINT
+ *    new_id:            true,                          # MQPMO_NEW_MSG_ID & MQPMO_NEW_CORREL_ID
+ *    new_msg_id:        true,                          # MQPMO_NEW_MSG_ID
+ *    new_correl_id:     true,                          # MQPMO_NEW_CORREL_ID
+ *    fail_if_quiescing: true,                          # MQOO_FAIL_IF_QUIESCING
+ *    options:           WMQ::MQPMO_FAIL_IF_QUIESCING   # MQPMO_*
  *   )
  *
  * Mandatory Parameters
@@ -768,7 +752,7 @@ VALUE QueueManager_begin(VALUE self)
  *
  * * :options => Fixnum (Advanced MQ Use only)
  *   * Numeric field containing any of the MQ Put message options or'd together
- *     * E.g. :options => WMQ::MQPMO_PASS_IDENTITY_CONTEXT | WMQ::MQPMO_ALTERNATE_USER_AUTHORITY
+ *     * E.g. options:  WMQ::MQPMO_PASS_IDENTITY_CONTEXT | WMQ::MQPMO_ALTERNATE_USER_AUTHORITY
  *   * Note: If :options is supplied, it is applied first, then the above parameters are
  *     applied afterwards.
  *   * One or more of the following values:
@@ -795,7 +779,7 @@ VALUE QueueManager_begin(VALUE self)
  *
  * Throws:
  * * WMQ::WMQException if comp_code == MQCC_FAILED
- * * Except if :exception_on_error => false was supplied as a parameter
+ * * Except if exception_on_error:  false was supplied as a parameter
  *   to QueueManager.new
  */
 VALUE QueueManager_put(VALUE self, VALUE hash)
@@ -1018,9 +1002,9 @@ static VALUE QueueManager_open_queue_each(VALUE parameters)
  * Example:
  *   require 'wmq/wmq_client'
  *
- *   WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
- *     qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:output) do |queue|
- *       queue.put(:data => 'Hello World')
+ *   WMQ::QueueManager.connect(q_mgr_name: 'REID', connection_name: 'localhost(1414)') do |qmgr|
+ *     qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :output) do |queue|
+ *       queue.put(data: 'Hello World')
  *     end
  *   end
  */
@@ -1086,43 +1070,43 @@ static VALUE QueueManager_singleton_connect_ensure(VALUE self)
  * * Since the number of parameters can vary dramatically, all parameters are passed by name in a hash
  * * Summary of parameters and their WebSphere MQ equivalents:
  *  WMQ::QueueManager.connect(                             # WebSphere MQ Equivalents:
- *   :q_mgr_name         => 'queue_manager name',
- *   :exception_on_error => true,                          # n/a
- *   :connect_options    => WMQ::MQCNO_FASTBATH_BINDING    # MQCNO.Options
+ *   q_mgr_name:          'queue_manager name',
+ *   exception_on_error:  true,                          # n/a
+ *   connect_options:     WMQ::MQCNO_FASTBATH_BINDING    # MQCNO.Options
  *
- *   :trace_level        => 0,                             # n/a
+ *   trace_level:         0,                             # n/a
  *
  *   # Common client connection parameters
- *   :channel_name       => 'svrconn channel name',        # MQCD.ChannelName
- *   :connection_name    => 'localhost(1414)',             # MQCD.ConnectionName
- *   :transport_type     => WMQ::MQXPT_TCP,                # MQCD.TransportType
+ *   channel_name:        'svrconn channel name',        # MQCD.ChannelName
+ *   connection_name:     'localhost(1414)',             # MQCD.ConnectionName
+ *   transport_type:      WMQ::MQXPT_TCP,                # MQCD.TransportType
  *
  *   # Advanced client connections parameters
- *   :max_msg_length     => 65535,                         # MQCD.MaxMsgLength
- *   :security_exit      => 'Name of security exit',       # MQCD.SecurityExit
- *   :send_exit          => 'Name of send exit',           # MQCD.SendExit
- *   :receive_exit       => 'Name of receive exit',        # MQCD.ReceiveExit
- *   :security_user_data => 'Security exit User data',     # MQCD.SecurityUserData
- *   :send_user_data     => 'Send exit user data',         # MQCD.SendUserData
- *   :receive_user_data  => 'Receive exit user data',      # MQCD.ReceiveUserData
- *   :heartbeat_interval =>  1,                            # MQCD.HeartbeatInterval
- *   :remote_security_id => 'Remote Security id',          # MQCD.RemoteSecurityId
- *   :ssl_cipher_spec    => 'SSL Cipher Spec',             # MQCD.SSLCipherSpec
- *   :keep_alive_interval=> -1,                            # MQCD.KeepAliveInterval
- *   :mode_name          => 'LU6.2 Mode Name',             # MQCD.ModeName
- *   :tp_name            => 'LU6.2 Transaction pgm name',  # MQCD.TpName
- *   :user_identifier    => 'LU 6.2 Userid',               # MQCD.UserIdentifier
- *   :password           => 'LU6.2 Password',              # MQCD.Password
- *   :long_remote_user_id=> 'Long remote user identifier', # MQCD.LongRemoteUserId (Ptr, Length)
- *   :ssl_peer_name      => 'SSL Peer name',               # MQCD.SSLPeerName (Ptr, Length)
+ *   max_msg_length:      65535,                         # MQCD.MaxMsgLength
+ *   security_exit:       'Name of security exit',       # MQCD.SecurityExit
+ *   send_exit:           'Name of send exit',           # MQCD.SendExit
+ *   receive_exit:        'Name of receive exit',        # MQCD.ReceiveExit
+ *   security_user_data:  'Security exit User data',     # MQCD.SecurityUserData
+ *   send_user_data:      'Send exit user data',         # MQCD.SendUserData
+ *   receive_user_data:   'Receive exit user data',      # MQCD.ReceiveUserData
+ *   heartbeat_interval:   1,                            # MQCD.HeartbeatInterval
+ *   remote_security_id:  'Remote Security id',          # MQCD.RemoteSecurityId
+ *   ssl_cipher_spec:     'SSL Cipher Spec',             # MQCD.SSLCipherSpec
+ *   keep_alive_interval: -1,                            # MQCD.KeepAliveInterval
+ *   mode_name:           'LU6.2 Mode Name',             # MQCD.ModeName
+ *   tp_name:             'LU6.2 Transaction pgm name',  # MQCD.TpName
+ *   user_identifier:     'LU 6.2 Userid',               # MQCD.UserIdentifier
+ *   password:            'LU6.2 Password',              # MQCD.Password
+ *   long_remote_user_id: 'Long remote user identifier', # MQCD.LongRemoteUserId (Ptr, Length)
+ *   ssl_peer_name:       'SSL Peer name',               # MQCD.SSLPeerName (Ptr, Length)
  *
  *   # SSL Options
- *   :key_repository     => '/var/mqm/qmgrs/.../key',        # MQSCO.KeyRepository
- *   :crypto_hardware    => 'GSK_ACCELERATOR_NCIPHER_NF_ON', # MQSCO.CryptoHardware
+ *   key_repository:      '/var/mqm/qmgrs/.../key',        # MQSCO.KeyRepository
+ *   crypto_hardware:     'GSK_ACCELERATOR_NCIPHER_NF_ON', # MQSCO.CryptoHardware
  *   )
  *
  * Optional Parameters
- * * :q_mgr_name => String
+ * * q_mgr_name:  String
  *   * Name of the existing WebSphere MQ Queue Manager to connect to
  *
  *   * Default:
@@ -1211,13 +1195,13 @@ static VALUE QueueManager_singleton_connect_ensure(VALUE self)
  *   require 'wmq/wmq_client'
  *
  *   WMQ::QueueManager.connect(
- *               :channel_name    => 'SYSTEM.DEF.SVRCONN',
- *               :transport_type  => WMQ::MQXPT_TCP,
- *               :connection_name => 'localhost(1414)' ) do |qmgr|
- *     qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:input) do |queue|
+ *               channel_name:     'SYSTEM.DEF.SVRCONN',
+ *               transport_type:   WMQ::MQXPT_TCP,
+ *               connection_name:  'localhost(1414)' ) do |qmgr|
+ *     qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :input) do |queue|
  *
  *       message = WMQ::Message.new
- *       if queue.get(:message => message)
+ *       if queue.get(message:  message)
  *         puts "Data Received: #{message.data}"
  *       else
  *         puts 'No message available'
@@ -1348,41 +1332,41 @@ static int QueueManager_execute_each (VALUE key, VALUE value, PQUEUE_MANAGER pqm
  * Example
  *   WMQ::QueueManager.connect do |qmgr|
  *     result = qmgr.execute(
- *                :command         => :inquire_q,
- *                :q_name          => 'MY.LOCAL.QUEUE',
- *                :q_type          => WMQ::MQQT_LOCAL,
- *                :current_q_depth => nil
+ *                command:          :inquire_q,
+ *                q_name:           'MY.LOCAL.QUEUE',
+ *                q_type:           WMQ::MQQT_LOCAL,
+ *                current_q_depth:  nil
  *                )
  *     # OR, we can replace the method name execute with the MQAI command:
  *     result = qmgr.inquire_q(
- *                :q_name          => 'MY.LOCAL.QUEUE',
- *                :q_type          => WMQ::MQQT_LOCAL,
- *                :current_q_depth => nil
+ *                q_name:           'MY.LOCAL.QUEUE',
+ *                q_type:           WMQ::MQQT_LOCAL,
+ *                current_q_depth:  nil
  *                )
  *
  * Complete Example:
  *   require 'wmq/wmq'
  *   require 'wmq/wmq_const_admin'
- *   WMQ::QueueManager.connect(:q_mgr_name=>'REID', :connection_name=>'localhost(1414)') do |qmgr|
- *     qmgr.reset_q_stats(:q_name=>'*').each {|item| p item }
+ *   WMQ::QueueManager.connect(q_mgr_name: 'REID', connection_name: 'localhost(1414)') do |qmgr|
+ *     qmgr.reset_q_stats(q_name: '*').each {|item| p item }
  *   end
  *
  * Some one line examples
- *   qmgr.inquire_q(:q_name=>'TEST*').each {|item| p item }
+ *   qmgr.inquire_q(q_name: 'TEST*').each {|item| p item }
  *
- *   qmgr.inquire_q(:q_name=>'TEST*', :q_type=>WMQ::MQQT_LOCAL, :current_q_depth=>nil).each {|item| p item }
+ *   qmgr.inquire_q(q_name: 'TEST*', q_type: WMQ::MQQT_LOCAL, current_q_depth: nil).each {|item| p item }
  *
- *   qmgr.inquire_process(:process_name=>'*').each {|item| p item }
+ *   qmgr.inquire_process(process_name:'*').each {|item| p item }
  *
  *   qmgr.ping_q_mgr.each {|item| p item }
  *
  *   qmgr.refresh_security.each {|item| p item }
  *
- *   qmgr.inquire_q_status(:q_name=>'TEST*', :q_status_type=>:q_status, :q_status_attrs=>:process_id).each {|item| p item }
+ *   qmgr.inquire_q_status(q_name: 'TEST*', q_status_type: :q_status, q_status_attrs: :process_id).each {|item| p item }
  *
  *   qmgr.start_channel_listener.each {|item| p item }
  *
- *   qmgr.inquire_channel_status(:channel_name=>'*').each {|item| p item }
+ *   qmgr.inquire_channel_status(channel_name: '*').each {|item| p item }
  */
 VALUE QueueManager_execute(VALUE self, VALUE hash)
 {

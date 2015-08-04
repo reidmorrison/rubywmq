@@ -4,9 +4,9 @@ $:.push File.expand_path("../lib", __FILE__)
 require 'rubywmq/version'
 
 # Describe your gem and declare its dependencies:
-Gem::Specification.new do |spec|
+Gem::Specification.new do |s|
   # Exclude locally compiled files since they are platform specific
-  excludes = [
+  excludes      = [
     /lib.wmq.constants\.rb/,
     /lib.wmq.constants_admin\.rb/,
     /ext.wmq_structs\.c/,
@@ -18,23 +18,20 @@ Gem::Specification.new do |spec|
     /\.log$/,
     /nbproject/
   ]
-
-  spec.name        = 'rubywmq'
-  spec.version     = WMQ::VERSION
-  spec.platform    = Gem::Platform::RUBY
-  spec.authors     = ['Reid Morrison', 'Edwin Fine']
-  spec.email       = ['reidmo@gmail.com']
-  spec.homepage    = 'https://github.com/reidmorrison/rubywmq'
-  spec.summary     = "Native Ruby interface into WebSphere MQ"
-  spec.description = "RubyWMQ is a high performance native Ruby interface into WebSphere MQ."
-  spec.files       = Dir["lib/**/*", "LICENSE.txt", "Rakefile", "README.md"]
-  spec.files       = FileList["./**/*"].exclude(*excludes).map{|f| f.sub(/^\.\//, '')} + ['.document']
-  spec.extensions  << 'ext/extconf.rb'
-  spec.test_files  = Dir["test/**/*"]
-  spec.license     = "Apache License V2.0"
-  spec.has_rdoc    = true
-  spec.required_ruby_version = '>= 1.8.4'
-  spec.add_development_dependency 'shoulda'
-  spec.requirements << 'WebSphere MQ v5.3, v6 or v7 Client or Server with Development Kit'
+  s.name        = 'rubywmq'
+  s.version     = WMQ::VERSION
+  s.platform    = Gem::Platform::RUBY
+  s.authors     = ['Reid Morrison']
+  s.email       = ['reidmo@gmail.com']
+  s.homepage    = 'https://github.com/reidmorrison/rubywmq'
+  s.summary     = 'Native Ruby interface into WebSphere MQ'
+  s.description = 'RubyWMQ is a high performance native Ruby interface into WebSphere MQ.'
+  s.files       = FileList["./**/*"].exclude(*excludes).map { |f| f.sub(/^\.\//, '') } + ['.document']
+  s.test_files  = Dir['test/**/*']
+  s.license     = 'Apache License V2.0'
+  s.has_rdoc    = true
+  s.extensions << 'ext/extconf.rb'
+  s.requirements << 'WebSphere MQ v5.3, v6 or v7 Client or Server with Development Kit'
+  s.required_ruby_version = '>= 1.9'
 end
 

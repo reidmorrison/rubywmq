@@ -2,7 +2,6 @@
 # Sample : put() : Put a message to a queue with a Refernce header
 #          Open the queue so that multiple puts can be performed
 #
-require 'rubygems'
 require 'wmq'
 
 # The Rules Format header (MQRFH) allows a list of name value pairs to be sent along
@@ -31,21 +30,24 @@ require 'wmq'
 #       it out immediately again could result in re-ordering of the name value pairs.
 #
 
-WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
-  qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:output) do |queue|
-    message = WMQ::Message.new
+WMQ::QueueManager.connect(q_mgr_name: 'REID') do |qmgr|
+  qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :output) do |queue|
+    message      = WMQ::Message.new
     message.data = 'Hello World'
 
     message.headers = [
-     {:header_type =>:rf_header,
-      :name_value => {'name1' => 'value1',
-                      'name2' => 'value2',
-                      'name3' => ['value 3a', 'value 3b']}
-     }]
+      {
+        header_type: :rf_header,
+        name_value:  {
+          'name1' => 'value1',
+          'name2' => 'value2',
+          'name3' => ['value 3a', 'value 3b']
+        }
+      }
+    ]
 
     message.descriptor[:format] = WMQ::MQFMT_STRING
 
-    queue.put(:message=>message)
+    queue.put(message: message)
   end
 end
-

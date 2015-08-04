@@ -4,9 +4,9 @@
 #        Windows, Solaris and Linux
 #
 require 'mkmf'
-require '../../generate/generate_reason'
-require '../../generate/generate_const'
-require '../../generate/generate_structs'
+require_relative '../../generate/generate_reason'
+require_relative '../../generate/generate_const'
+require_relative '../../generate/generate_structs'
 
 include_path = ''
 unless (RUBY_PLATFORM =~ /win/i) || (RUBY_PLATFORM =~ /solaris/i) || (RUBY_PLATFORM =~ /linux/i)

@@ -2,7 +2,6 @@
 # Sample : put() : Put a single message to a queue
 #          Open the queue so that multiple puts can be performed
 #
-require 'rubygems'
 require 'wmq'
 
 WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
@@ -16,4 +15,3 @@ WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
     queue.put(:data => 'Hello Again')
   end
 end
-

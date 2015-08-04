@@ -3,12 +3,12 @@
 #
 #     This server times out after 60 seconds, but could be modified to
 #     run forever. Example:
-#         queue.each(:wait=>-1) do |message|
+#         queue.each(wait: -1) do |message|
 #
 #     Note: - All calls are being performed under synchpoint control to
 #             prevent messages being if the program terminates unexpectedly
 #             or an error occurrs.
-#             Uses:  :sync=>true
+#             Uses:  sync: true
 #           - Queue#each will backout any message changes if an excecption is raised
 #             but not handled within the each block
 #
@@ -46,31 +46,34 @@
 #                 - E.g. Database, File etc..
 #             - etc....
 #
-require 'rubygems'
 require 'wmq'
 
-WMQ::QueueManager.connect(:q_mgr_name=>'REID') do |qmgr|
-  qmgr.open_queue(:q_name=>'TEST.QUEUE', :mode=>:input) do |queue|
-    queue.each(:wait=>60000, :sync=>true, :convert=>true) do |request|
-      puts "Data Received:"
+WMQ::QueueManager.connect(q_mgr_name: 'REID') do |qmgr|
+  qmgr.open_queue(q_name: 'TEST.QUEUE', mode: :input) do |queue|
+    queue.each(wait: 60000, sync: true, convert: true) do |request|
+      puts 'Data Received:'
       puts request.data
 
       begin
-        reply = WMQ::Message.new
+        reply      = WMQ::Message.new
         reply.data = 'Echo back:'+request.data
 
-        qmgr.put_to_reply_q(:message=>reply,
-                            :request_message=>request, # Only replies if message type is request
-                            :sync=>true)
+        qmgr.put_to_reply_q(
+          message:         reply,
+          request_message: request, # Only replies if message type is request
+          sync:            true
+        )
 
       rescue WMQ::WMQException => exc
         # Failed to send reply, put message to the Dead Letter Queue and add a dead letter header
         p exc
-        puts "Failed to reply to sender, Put to dead letter queue"
-        qmgr.put_to_dead_letter_q(:message=>request,
-                                  :reason=>WMQ::MQRC_UNKNOWN_REMOTE_Q_MGR,
-                                  :q_name=>queue.name,
-                                  :sync=>true)
+        puts 'Failed to reply to sender, Put to dead letter queue'
+        qmgr.put_to_dead_letter_q(
+          message: request,
+          reason:  WMQ::MQRC_UNKNOWN_REMOTE_Q_MGR,
+          q_name:  queue.name,
+          sync:    true
+        )
         # If it fails to put to the dead letter queue, this program will terminate and
         # the changes will be "backed out". E.g. Queue Full, ...
       end

@@ -1,4 +1,4 @@
-## rubywmq
+# rubywmq
 
 RubyWMQ is a high performance native Ruby interface into WebSphere MQ.
 
@@ -10,8 +10,8 @@ The Ruby WMQ interface currently supports the following features:
 
 High performance
 
-* Able to read over 2000 messages per second from a Queue
-* (Non-persistent messages, < 4K each, MQ V6, running on Windows Laptop)
+* Able to read over 2,000 messages per second from a Queue
+    * Non-persistent messages, < 4K each, MQ V6
 
 Full support for the entire MQ Administration interface (MQAI)
 
@@ -50,10 +50,8 @@ Is written in C to ensure easier portability and performance
 
 ### Compatibility
 
-Ruby
-
-* RubyWMQ only works on Ruby MRI on with Ruby 1.8.7, Ruby 1.9.3, or greater
-* For JRuby, see http://github.com/reidmorrison/jruby-jms
+* Ruby 1.9 or greater
+* Not designed for JRuby, use (jruby-jms)[https://github.com/reidmorrison/jruby-jms]
 
 WebSphere MQ
 
@@ -64,21 +62,18 @@ WebSphere MQ
 ## Example
 
 ```ruby
-require 'rubygems'
 require 'wmq'
 
 # Connect to a local queue manager called 'TEST' and put a single message
 # on the queue 'TEST.QUEUE'
-WMQ::QueueManager.connect(:q_mgr_name=>'TEST') do |qmgr|
-    qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
+WMQ::QueueManager.connect(q_mgr_name: 'TEST') do |qmgr|
+    qmgr.put(q_name: 'TEST.QUEUE', data: 'Hello World')
 end
 ```
 
 ## More Examples
 
-There are many examples covering many of the ways that RubyWMQ can be used. The examples
-are installed as part of the Gem under the 'examples' sub-directory. The examples can
-also be be viewed at https://github.com/reidmorrison/rubywmq/tree/master/examples
+The examples below are all available at https://github.com/reidmorrison/rubywmq/tree/master/examples
 
 Put one message to a Queue (Without opening the queue)
 
@@ -186,7 +181,7 @@ Download and install the Ruby installer from http://rubyinstaller.org/downloads/
 
 Download and install the Development Kit from the same site
 
-* Extract files into c:\DevKit
+* Extract files into c:\Devkit
 
 Open a command prompt and run the commands below:
 
@@ -204,17 +199,17 @@ Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerw
 #### Install the RubyWMQ Gem
 
     call "c:\DevKit\devkitvars.bat"
-    gem install rubywmq --platform=ruby
+    gem install rubywmq --platform=ruby -- '--with-mqm-include="C:\Program Files\IBM\WebSphere MQ\Tools\c\include"'
 
 #### Installation Errors
 
 Use this command to find the directory in which the gems are installed
 
-    gem env
+    gem which rubywmq
 
 The path to the rubywmq gem will be something like
 
-    C:\Ruby193\lib\ruby\gems\1.9.1\gems\rubywmq-2.0.0\ext
+    C:\Ruby22\lib\ruby\gems\2.2.0\gems\rubywmq-2.0.3\ext
 
 When WebSphere MQ is not installed in the default location, change to the directory
 above and call the build command directly while supplying the location explicitly:
@@ -235,7 +230,6 @@ Create a local queue called TEST.QUEUE
 Run the following Ruby Code in an irb session:
 
 ```ruby
-require 'rubygems'
 require 'wmq'
 WMQ::QueueManager.connect(:q_mgr_name=>'TEST') do |qmgr|
   qmgr.put(:q_name=>'TEST.QUEUE', :data => 'Hello World')
@@ -256,7 +250,7 @@ is installed locally. This prevents issues with having to statically link with
 both the client and server libraries and then having to select the "correct"
 one on startup.
 
-Additionally, this approach allows RubyWMQ to be simultaneously connect to both a local
+Additionally, this approach allows RubyWMQ to be simultaneously connected to a local
 Queue Manager via server bindings and to a remote Queue Manager using Client bindings.
 
 Instead of hard coding all the MQ C Structures and return codes into RubyWMQ, it
@@ -359,41 +353,21 @@ dis channel(*) chltype(SVRCONN)
 * Look for the channel name the application is using.
 * Note: the channel name is case-sensitive.
 
-## Support
+## Versioning
 
-Ruby WMQ Community Support Mailing List: <http://rubyforge.org/mailman/listinfo/rubywmq-misc>
-
-Feature and Bug Reports: <http://github.com/reidmorrison/rubywmq/issues>
-
-## Contributing
-
-Once you've made your great commits:
-
-1. [Fork](http://help.github.com/forking/) rubywmq
-2. Create a topic branch - `git checkout -b my_branch`
-3. Push to your branch - `git push origin my_branch`
-4. Create an [Issue](http://github.com/reidmorrison/rubywmq/issues) with a link to your branch
-5. That's it!
-
-## Meta
-
-* Code: `git clone git://github.com/reidmorrison/rubywmq.git`
-* Home: <http://github.com/reidmorrison/rubywmq>
-* Bugs: <http://github.com/reidmorrison/rubywmq/issues>
-* Gems: <http://rubygems.org/gems/rubywmq>
-
-This project uses [Semantic Versioning](http://semver.org/).
+This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Author
 
-Reid Morrison :: reidmo@gmail.com :: @reidmorrison
+[Reid Morrison](https://github.com/reidmorrison) :: @reidmorrison
 
-Special thanks to Edwin Fine for the RFH parsing code and for introducing me to
-the wonderful world of Ruby
+## Contributors
+
+* Edwin Fine - RFH parsing code
 
 ## License
 
-Copyright 2006 - 2012 J. Reid Morrison
+Copyright 2006 - 2015 J. Reid Morrison
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
