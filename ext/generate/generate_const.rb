@@ -3,7 +3,7 @@ class GenerateConst
 
   # Extract Constants from Header files
   def GenerateConst.extract_const(filename, const_prefix, start_exp=nil, end_exp=nil)
-    @constants = []
+    constants = []
     active     =
       if start_exp then
         false
@@ -18,7 +18,7 @@ class GenerateConst
             break if start_exp && line.match(end_exp)
             # Skip Comment lines, then check for a match
             if (line !~ /^\s*\/\*/) && (match = /\s*#define\s+(#{const_prefix}\w+)[\(\s]+([-\\\w\dx\'\"\s]+)/.match(line))
-              @constants << [match[1], match[2]]
+              constants << [match[1], match[2]]
             end
           else
             next unless line.match(start_exp)
@@ -27,7 +27,7 @@ class GenerateConst
         end
       end
     end
-    @constants
+    constants
   end
 
   # Extract MQ Constants from Header files

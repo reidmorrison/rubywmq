@@ -1,7 +1,8 @@
-$:.push File.expand_path("../lib", __FILE__)
+$:.push File.expand_path('../lib', __FILE__)
 
 # Maintain your gem's version:
-require 'rubywmq/version'
+require 'wmq/version'
+require 'rake/file_list'
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
@@ -26,7 +27,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/reidmorrison/rubywmq'
   s.summary     = 'Native Ruby interface into WebSphere MQ'
   s.description = 'RubyWMQ is a high performance native Ruby interface into WebSphere MQ.'
-  s.files       = FileList["./**/*"].exclude(*excludes).map { |f| f.sub(/^\.\//, '') } + ['.document']
+  s.files       = Rake::FileList['./**/*'].exclude(*excludes).map { |f| f.sub(/^\.\//, '') } + ['.document']
   s.test_files  = Dir['test/**/*']
   s.license     = 'Apache License V2.0'
   s.has_rdoc    = true

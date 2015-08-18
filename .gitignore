@@ -5,8 +5,8 @@ ext/wmq_reason.c
 ext/Makefile
 ext/*.o
 ext/wmq.so
-nbproject/private/*
 .DS_Store
 *.gem
 .idea/*
 Gemfile.lock
+.bundle

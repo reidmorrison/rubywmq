@@ -2,19 +2,19 @@ class GenerateReason
 
   # Extract Error Code Constants from Header files
   def GenerateReason.extract_const(filename, const_prefix)
-    @constants = []
+    constants = []
     File.open(filename) do |file|
       file.each do |line|
         line.rstrip!
         # Skip empty and comment lines
         if line.length > 0 && line !~ /^\s*\/\*/
           if match = /\s*#define\s+(#{const_prefix}\w+)[\(\s]+([-\dx]+)/.match(line)
-            @constants << [match[1], match[2]]
+            constants << [match[1], match[2]]
           end
         end
       end
     end
-    @constants
+    constants
   end
 
   # Extract Error Code Constants from Header files
@@ -81,6 +81,7 @@ END_OF_STRING
 
     str_switch  = ''
     str_id_init = ''
+    values = []
 # Integer Selectors for Object Attributes
     [
       ['cmqc.h', 'MQIA_'],
@@ -106,7 +107,11 @@ END_OF_STRING
       str_id_init << "    /* Constants #{item[1]}* from #{item[0]} */\n"
       GenerateReason.selector_case(path+item[0], item[1], item[2]) do |const|
         id = const[0].gsub(item[1], '').downcase
-        str_switch << "        case %-30s: return ID_#{id};\n" % const[0]
+        # Ignore duplicate values
+        unless values.include?(const[1])
+          str_switch << "        case %-30s: return ID_#{id};\n" % const[0]
+          values << const[1]
+        end
         str_id_init << "    ID_%-25s = rb_intern(\"#{id}\");\n" % id
         str << "static ID ID_#{id};\n"
       end
@@ -146,7 +151,7 @@ END_OF_STRING
 # Integer System Selectors
 #     ['cmqbc.h', 'MQIASY_'],
     ].each do |item|
-      str << "    /* Consteants #{item[1]}* from #{item[0]} */\n"
+      str << "    /* Constants #{item[1]}* from #{item[0]} */\n"
       GenerateReason.selector_case(path+item[0], item[1], item[2]) do |const|
         str << "    if(selector_id == %-32s{ *selector = #{const[0]}; return;}\n" % "ID_#{const[0].gsub(item[1], '').downcase})"
       end

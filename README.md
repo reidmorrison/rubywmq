@@ -44,7 +44,7 @@ Single Ruby WMQ auto-detection library that concurrently supports:
 
 Includes latest client connection options such as SSL
 
-Tested with WebSphere MQ V5.3, V6, V7, and V7.5
+Tested with WebSphere MQ V5.3, V6, V7, V7.5, and V8
 
 Is written in C to ensure easier portability and performance
 
@@ -144,6 +144,8 @@ Also install RubyGems and ruby-dev or ruby-sdk packages if not already installed
 
 Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerworks/downloads/ws/wmq/)
 
+* Develop on [WebSphere MQ Advanced](https://www.ibm.com/developerworks/community/blogs/messaging/entry/develop_on_websphere_mq_advanced_at_no_charge?lang=en#) at no charge!
+
 * Note: Install the Development Toolkit (SDK) and Client
 
 Install RubyWMQ Gem
@@ -194,11 +196,17 @@ If you experience any difficulties, see ﻿https://github.com/oneclick/rubyinsta
 
 Install the [WebSphere MQ Client and/or Server](﻿http://www.ibm.com/developerworks/downloads/ws/wmq/)
 
+* Develop on [WebSphere MQ Advanced](https://www.ibm.com/developerworks/community/blogs/messaging/entry/develop_on_websphere_mq_advanced_at_no_charge?lang=en#) at no charge!
+
 * Note: Install the Development Toolkit (SDK) and Client
 
 #### Install the RubyWMQ Gem
 
     call "c:\DevKit\devkitvars.bat"
+    gem install rubywmq
+
+If WebSphere MQ is installed in the non-default location:
+
     gem install rubywmq --platform=ruby -- '--with-mqm-include="C:\Program Files\IBM\WebSphere MQ\Tools\c\include"'
 
 #### Installation Errors
