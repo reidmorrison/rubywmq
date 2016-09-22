@@ -4,6 +4,12 @@ RubyWMQ is a high performance native Ruby interface into WebSphere MQ.
 
 * http://github.com/reidmorrison/rubywmq
 
+### Project Status 
+
+RubyWMQ is now in _maintenance mode_. It is not under active development but pull requests are very much welcome. Just be sure to include tests!
+
+Note: IBM MQSeries encryption is not supported. Pull requests with this feature are welcome!
+
 ### Features
 
 The Ruby WMQ interface currently supports the following features:
