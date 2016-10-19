@@ -815,7 +815,7 @@ VALUE QueueManager_put(VALUE self, VALUE hash)
     {
         WMQ_HASH2MQCHARS(q_name, q_mgr_name, od.ObjectQMgrName)
 
-        q_name = rb_hash_aref(val, ID2SYM(ID_q_name));
+        q_name = rb_hash_aref(q_name, ID2SYM(ID_q_name));
         if (NIL_P(q_name))
         {
             rb_raise(rb_eArgError,

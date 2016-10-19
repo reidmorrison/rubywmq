@@ -64,11 +64,15 @@ module WMQ
           reply.descriptor[:msg_id] = request.descriptor[:msg_id]
         end
 
-        parms[:q_name]    = request.descriptor[:reply_to_q]
-        parms[:q_mgr_name]= request.descriptor[:reply_to_q_mgr]
-        return put(parms)
+        q_name = {
+            q_name:     request.descriptor[:reply_to_q],
+            q_mgr_name: request.descriptor[:reply_to_q_mgr]
+        }
+
+        parms[:q_name] = q_name
+        put(parms)
       else
-        return false
+        false
       end
     end
 
