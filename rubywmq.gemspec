@@ -29,7 +29,7 @@ Gem::Specification.new do |s|
   s.description = 'RubyWMQ is a high performance native Ruby interface into WebSphere MQ.'
   s.files       = Rake::FileList['./**/*'].exclude(*excludes).map { |f| f.sub(/^\.\//, '') } + ['.document']
   s.test_files  = Dir['test/**/*']
-  s.license     = 'Apache License V2.0'
+  s.license     = 'Apache-2.0'
   s.has_rdoc    = true
   s.extensions << 'ext/extconf.rb'
   s.requirements << 'WebSphere MQ v5.3, v6 or v7 Client or Server with Development Kit'
