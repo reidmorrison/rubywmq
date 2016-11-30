@@ -35,4 +35,3 @@ Gem::Specification.new do |s|
   s.requirements << 'WebSphere MQ v5.3, v6 or v7 Client or Server with Development Kit'
   s.required_ruby_version = '>= 1.9'
 end
-
