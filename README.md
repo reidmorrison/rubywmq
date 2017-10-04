@@ -57,7 +57,7 @@ Is written in C to ensure easier portability and performance
 ### Compatibility
 
 * Ruby 1.9 or greater
-* Not designed for JRuby, use (jruby-jms)[https://github.com/reidmorrison/jruby-jms]
+* Not designed for JRuby, use [jruby-jms](https://github.com/reidmorrison/jruby-jms)
 
 WebSphere MQ
 
